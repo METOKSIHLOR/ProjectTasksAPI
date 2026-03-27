@@ -25,6 +25,7 @@ class Project(Base):
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
     members = relationship("ProjectMember", back_populates="project", lazy="selectin")
+    tasks = relationship("Task", back_populates="project", lazy="selectin")
 
 class ProjectMember(Base):
     __tablename__ = "project_members"
@@ -49,9 +50,12 @@ class Task(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), nullable=False)
     title: Mapped[str] = mapped_column(nullable=False)
-    status: Mapped[TaskStatus] = mapped_column(nullable=False)
+    status: Mapped[TaskStatus] = mapped_column(default='todo',nullable=False)
+    description: Mapped[str] = mapped_column(nullable=False)
     assignee_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now())
+
+    project = relationship("Project", back_populates="tasks")
 
     @validates("status")
     def validate_status(self, key, status):

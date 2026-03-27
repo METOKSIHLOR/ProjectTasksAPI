@@ -25,6 +25,6 @@ async def connect_db():
 async def close_db():
     if engine:
         #async with engine.begin() as conn:
-        #    await conn.run_sync(Base.metadata.drop_all)
+         #   await conn.run_sync(Base.metadata.drop_all)
 
         await engine.dispose()

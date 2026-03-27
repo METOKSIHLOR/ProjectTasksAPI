@@ -3,6 +3,7 @@ from typing import Literal, List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.schemas.projectSchemas import CreateProjectSchema, ProjectAddMemberSchema
+from src.api.schemas.tasksSchemas import TaskInfoSchema
 from src.db.models import Project, ProjectMember
 from src.db.repositories.projectRepo import ProjectRepository
 
@@ -29,6 +30,8 @@ class ProjectServices:
         member = await self.repo.add_member(ProjectMember(project_id=project_id, user_id=user_id))
         await self.repo.commit()
         return member
+
+
 
 
 

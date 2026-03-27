@@ -5,7 +5,8 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.testing.suite.test_reflection import users
 
-from src.db.models import Project, ProjectMember
+from src.api.schemas.tasksSchemas import TaskInfoSchema
+from src.db.models import Project, ProjectMember, Task
 
 
 class ProjectRepository:
