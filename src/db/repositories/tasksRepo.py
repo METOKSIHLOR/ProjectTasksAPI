@@ -17,5 +17,15 @@ class TasksRepository:
         await self.session.flush()
         return tasks
 
+    async def get_task_by_id(self, task_id: int):
+        stmt = select(Task).where(Task.id == task_id)
+        task = await self.session.execute(stmt)
+        return task.scalar_one_or_none()
+
+    async def delete_task(self, task: Task):
+        deleted = await self.session.delete(task)
+        await self.session.flush()
+        return deleted
+
     async def commit(self):
         await self.session.commit()

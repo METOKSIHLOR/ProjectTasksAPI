@@ -32,16 +32,6 @@ class ProjectRepository:
         project = await self.session.execute(stmt)
         return project.scalar_one_or_none()
 
-    async def check_user_role(self, user_id, project_id, roles: List) -> bool:
-        stmt = select(ProjectMember).where(and_(ProjectMember.project_id == project_id, ProjectMember.user_id == user_id))
-        result = await self.session.execute(stmt)
-        member = result.scalar_one_or_none()
-
-        if member:
-            for i in roles:
-                if member.role == i:
-                   return True
-        return False
 
     async def add_member(self, member: ProjectMember):
         self.session.add(member)

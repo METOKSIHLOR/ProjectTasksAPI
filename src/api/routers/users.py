@@ -20,7 +20,7 @@ async def register_user(user: UserRegistrationSchema, session: AsyncSession = De
         user = await service.register(user) # добавляем пользователя
     except IntegrityError: # если имя или почта уже заняты
         await session.rollback()
-        raise HTTPException(status_code=400, detail="Username or email already exists")
+        raise HTTPException(status_code=400, detail="This email already exists")
     return user
 
 @router.post("/auth/login")

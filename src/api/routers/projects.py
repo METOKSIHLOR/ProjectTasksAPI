@@ -13,12 +13,6 @@ from src.services.tasksServices import TasksService
 from src.services.userServices import UserServices
 
 router = APIRouter(prefix="/projects", tags=["projects"])
-async def check_user_role(service, user_id, project_id, roles: List[str]) -> bool:
-    try:
-        await service.check_user_role(user_id, project_id, roles)  # проверяем является ли пользователь владельцем
-    except TypeError:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    return True
 
 @router.post("", response_model=CreateProjectSchema)
 async def create_project(project: CreateProjectSchema,
@@ -42,9 +36,9 @@ async def get_project_details(project_id: int,
                               user_id = Depends(get_current_user)) -> ProjectInfoSchema:
     """Возвращает информацию о проекте по его айди"""
     service = ProjectServices(session)
-
+    user_serv = UserServices(session)
     """Проверяем имеет ли пользователь доступ (Должен участвовать в проекте чтобы увидеть о нем информацию)"""
-    await check_user_role(service, user_id, project_id, ["member", "owner"])
+    await user_serv.check_user_role(user_id, project_id, ["member", "owner"])
 
     project = await service.get_project_by_id(project_id) # получаем обьект проекта
 
@@ -59,12 +53,17 @@ async def add_project_member(project_id: int, member: ProjectAddMemberSchema,
                               user_id = Depends(get_current_user)):
     """Ручка добавляет в указанную группу нового участника, если пользователь является владельцем"""
     service = ProjectServices(session)
-    await check_user_role(service, user_id, project_id, ["member", "owner"])
+    user_serv = UserServices(session)
+
+    user = await user_serv.get_user_by_id(member.user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    await user_serv.check_user_role(user_id, project_id, ["owner"])
 
     try:
         await service.add_member(user_id=member.user_id, project_id=project_id)
     except IntegrityError: # если пользователь уже был добавлен в группу (дубликат в бд)
-        raise HTTPException(status_code=409, detail="User already added")
+        raise HTTPException(status_code=409, detail="User is already a member of this project")
     return {"Success": True}
 
 @router.post("/{project_id}/tasks")
@@ -72,9 +71,12 @@ async def create_project_task(project_id: int,
                               task: CreateTaskSchema,
                             session: AsyncSession = Depends(get_session),
                             user_id = Depends(get_current_user)) -> TaskInfoSchema:
-    proj_serv = ProjectServices(session)
+    user_serv = UserServices(session)
     task_serv = TasksService(session)
-    await check_user_role(proj_serv, user_id, project_id, ["owner"])
+
+    await user_serv.is_user_member(task.assignee_id, project_id)
+    await user_serv.check_user_role(user_id, project_id, ["owner"])
+
     try:
         task = await task_serv.create_task(project_id=project_id, task=task)
     except IntegrityError:
@@ -85,8 +87,8 @@ async def create_project_task(project_id: int,
 async def get_project_tasks(project_id: int,
                             session: AsyncSession = Depends(get_session),
                             user_id = Depends(get_current_user)) -> List[TaskInfoSchema]:
-    proj_serv = ProjectServices(session)
+    user_serv = UserServices(session)
     task_serv = TasksService(session)
-    await check_user_role(proj_serv, user_id, project_id, ["member", "owner"])
+    await user_serv.check_user_role(user_id, project_id, ["member", "owner"])
     tasks = await task_serv.get_tasks_by_project_id(project_id)
     return tasks

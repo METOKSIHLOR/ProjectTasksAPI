@@ -1,6 +1,8 @@
+from typing import List
+
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_
 
 from src.db.models import User, Project, ProjectMember
 
@@ -31,6 +33,25 @@ class UserRepository:
 
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+    async def check_user_role(self, user_id, project_id, roles: List[str]) -> bool:
+        stmt = select(ProjectMember).where(and_(ProjectMember.project_id == project_id, ProjectMember.user_id == user_id))
+        result = await self.session.execute(stmt)
+        member = result.scalar_one_or_none()
+
+        if member:
+            for i in roles:
+                if member.role == i:
+                   return True
+        raise TypeError
+
+    async def is_user_member(self, user_id: int, project_id: int) -> bool:
+        stmt = select(ProjectMember).where(
+            ProjectMember.user_id == user_id,
+            ProjectMember.project_id == project_id
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none() is not None
 
 
     async def commit(self):

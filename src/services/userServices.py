@@ -1,3 +1,6 @@
+from typing import List
+
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.authorization.hash import hash_password, verify_password
@@ -40,4 +43,16 @@ class UserServices:
     async def get_user_projects(self, user_id):
         projects = await self.repo.get_user_projects(user_id)
         return projects
+
+    async def check_user_role(self, user_id, project_id, roles: List[str]) -> bool:
+        try:
+            await self.repo.check_user_role(user_id, project_id, roles)  # проверяем соответствие роли пользователя
+        except TypeError:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        return True
+
+    async def is_user_member(self, user_id: int, project_id: int) -> bool:
+        if not await self.repo.is_user_member(user_id, project_id):
+            raise HTTPException(status_code=404, detail="User is not member of project")
+
 

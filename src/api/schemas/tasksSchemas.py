@@ -8,6 +8,7 @@ class CreateTaskSchema(BaseModel):
     assignee_id: int
 
 class TaskInfoSchema(BaseModel):
+    id: int
     title: str
     description: str
     status: str = Field(default="todo")
