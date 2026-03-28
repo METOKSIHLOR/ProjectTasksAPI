@@ -11,7 +11,7 @@ from src.db.repositories.user_repo import UserRepository
 import uuid
 
 class UserServices:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session):
         self.repo = UserRepository(session)
 
     async def register(self, schema: UserRegistrationSchema):

@@ -74,4 +74,4 @@ class Comment(Base):
     text: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now())
 
-    project = relationship("Project", back_populates="comments")
+    task = relationship("Task", back_populates="comments")

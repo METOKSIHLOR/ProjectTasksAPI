@@ -11,7 +11,7 @@ from src.services.user_services import UserServices
 
 
 class ProjectServices:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session):
         self.repo = ProjectRepository(session)
 
     async def create_new_project(self, project: CreateProjectSchema, user_id: int):
