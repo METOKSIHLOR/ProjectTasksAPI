@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from fastapi.params import Depends
 
 from src.api.dependencies import get_current_user, get_session
-from src.api.schemas.comments_schemas import CreateCommentSchema, CommentInfoSchema
+from src.api.schemas.comments_schemas import CreateCommentSchema, CommentInfoSchema, CommentUpdateSchema
 from src.api.schemas.tasks_schemas import UpdateTaskSchema
 from src.services.comments_services import CommentsServices
 from src.services.project_services import ProjectServices
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 async def delete_task(task_id: int, user_id: int = Depends(get_current_user), session = Depends(get_session)):
     service = TasksService(session)
     await service.delete_task(task_id=task_id, user_id=user_id)
-    return {"Success": True}
+    return {"success": True}
 
 @router.patch("/{task_id}")
 async def update_task(task_id: int,
@@ -26,22 +26,14 @@ async def update_task(task_id: int,
                       session = Depends(get_session)):
     service = TasksService(session)
     await service.update_task(task_id=task_id, new_task=new_task, user_id=user_id)
-    return {"Success": True}
+    return {"success": True}
 
 @router.post("/{task_id}/comments")
-async def create_comment(task_id: int,
+async def create_comment_in_task(task_id: int,
                          comment: CreateCommentSchema,
                        user_id: int = Depends(get_current_user),
                        session = Depends(get_session)):
-    tasks_service = TasksService(session)
     comm_service = CommentsServices(session)
     await comm_service.create_comment(task_id=task_id, author_id=user_id, text=comment.text)
-    return {"Success": True}
+    return {"success": True}
 
-@router.get("/{task_id}/comments")
-async def get_comments(task_id: int,
-                       user_id: int = Depends(get_current_user),
-                       session = Depends(get_session)) -> List[CommentInfoSchema]:
-    service = CommentsServices(session)
-    comments = await service.get_comments(task_id=task_id, user_id=user_id)
-    return comments

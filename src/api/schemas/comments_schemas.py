@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
 
 class CreateCommentSchema(BaseModel):
     text: str
@@ -8,5 +9,5 @@ class CommentInfoSchema(BaseModel):
     author_id: int
     text: str
 
-    class Config:
-        from_attributes = True
+class CommentUpdateSchema(BaseModel):
+    text: str = Field(min_length=1, default="")

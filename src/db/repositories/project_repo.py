@@ -30,6 +30,8 @@ class ProjectRepository:
     async def get_project_by_id(self, project_id: int):
         stmt = select(Project).where(Project.id == project_id)
         project = await self.session.execute(stmt)
+        if not project:
+            raise ValueError("Project not found")
         return project.scalar_one_or_none()
 
     async def is_user_member(self, user_id: int, project_id: int) -> bool:
@@ -40,11 +42,16 @@ class ProjectRepository:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none() is not None
 
-
     async def add_member(self, member: ProjectMember):
         self.session.add(member)
         await self.session.flush()
         return member
+
+    async def update_project_name(self, user_id: int, project_id: int, name: str):
+        project = await self.get_project_by_id(project_id)
+        project.name = name
+        await self.session.flush()
+        return project
 
 
     async def commit(self):

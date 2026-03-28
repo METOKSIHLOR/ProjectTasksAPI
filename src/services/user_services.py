@@ -38,6 +38,8 @@ class UserServices:
 
     async def get_user_by_id(self, user_id):
         user = await self.repo.get_user_by_id(user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
         return user
 
     async def get_user_projects(self, user_id):

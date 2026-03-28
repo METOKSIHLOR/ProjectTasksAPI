@@ -24,9 +24,9 @@ class TasksRepository:
         return task.scalar_one_or_none()
 
     async def delete_task(self, task: Task):
-        deleted = await self.session.delete(task)
+        await self.session.delete(task)
         await self.session.flush()
-        return deleted
+        return task
 
     async def update_task(self, task_id: int, new_task: dict):
         task = await self.get_task_by_id(task_id)

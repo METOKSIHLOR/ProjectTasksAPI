@@ -39,7 +39,7 @@ async def login(user: UserLoginSchema, response: Response, session: AsyncSession
                         httponly=True,
                         samesite="lax")
 
-    return {"Success": True}
+    return {"success": True}
 
 @router.post("/auth/logout")
 async def logout(response: Response,session_id = Cookie(None)):
@@ -51,7 +51,7 @@ async def logout(response: Response,session_id = Cookie(None)):
 
     storage.delete(session_id) # удаляем из хранилища сессию
 
-    return {"Success": True}
+    return {"success": True}
 
 @router.get("/me", response_model=UserResponseSchema)
 async def get_user(user_id: int = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
