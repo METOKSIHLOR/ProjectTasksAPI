@@ -1,8 +1,10 @@
+from typing import List
+
 from fastapi import APIRouter
 from fastapi.params import Depends
 
 from src.api.dependencies import get_current_user, get_session
-from src.api.schemas.comments_schemas import CreateCommentSchema
+from src.api.schemas.comments_schemas import CreateCommentSchema, CommentInfoSchema
 from src.api.schemas.tasks_schemas import UpdateTaskSchema
 from src.services.comments_services import CommentsServices
 from src.services.project_services import ProjectServices
@@ -33,6 +35,13 @@ async def create_comment(task_id: int,
                        session = Depends(get_session)):
     tasks_service = TasksService(session)
     comm_service = CommentsServices(session)
-    await tasks_service.check_user_permission_by_task_id(task_id=task_id, user_id=user_id, roles=["member", "owner"])
     await comm_service.create_comment(task_id=task_id, author_id=user_id, text=comment.text)
     return {"Success": True}
+
+@router.get("/{task_id}/comments")
+async def get_comments(task_id: int,
+                       user_id: int = Depends(get_current_user),
+                       session = Depends(get_session)) -> List[CommentInfoSchema]:
+    service = CommentsServices(session)
+    comments = await service.get_comments(task_id=task_id, user_id=user_id)
+    return comments
