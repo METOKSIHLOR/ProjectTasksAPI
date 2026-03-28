@@ -5,12 +5,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import get_current_user, get_session
-from src.api.schemas.projectSchemas import CreateProjectSchema, ProjectInfoSchema, ProjectMemberSchema, \
+from src.api.schemas.project_schemas import CreateProjectSchema, ProjectInfoSchema, ProjectMemberSchema, \
     ProjectAddMemberSchema
-from src.api.schemas.tasksSchemas import TaskInfoSchema, CreateTaskSchema
-from src.services.projectServices import ProjectServices
-from src.services.tasksServices import TasksService
-from src.services.userServices import UserServices
+from src.api.schemas.tasks_schemas import TaskInfoSchema, CreateTaskSchema
+from src.services.project_services import ProjectServices
+from src.services.tasks_services import TasksService
+from src.services.user_services import UserServices
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -36,14 +36,14 @@ async def get_project_details(project_id: int,
                               user_id = Depends(get_current_user)) -> ProjectInfoSchema:
     """Возвращает информацию о проекте по его айди"""
     service = ProjectServices(session)
-    user_serv = UserServices(session)
-    """Проверяем имеет ли пользователь доступ (Должен участвовать в проекте чтобы увидеть о нем информацию)"""
-    await user_serv.check_user_role(user_id, project_id, ["member", "owner"])
 
     project = await service.get_project_by_id(project_id) # получаем обьект проекта
 
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+
+    """Проверяем имеет ли пользователь доступ (Должен участвовать в проекте чтобы увидеть о нем информацию)"""
+    await service.check_user_permission_by_project_id(user_id, project_id, ["member", "owner"])
 
     return project
 
@@ -53,12 +53,7 @@ async def add_project_member(project_id: int, member: ProjectAddMemberSchema,
                               user_id = Depends(get_current_user)):
     """Ручка добавляет в указанную группу нового участника, если пользователь является владельцем"""
     service = ProjectServices(session)
-    user_serv = UserServices(session)
-
-    user = await user_serv.get_user_by_id(member.user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    await user_serv.check_user_role(user_id, project_id, ["owner"])
+    await service.check_user_permission_by_project_id(project_id=project_id, user_id=user_id, roles=["owner"])
 
     try:
         await service.add_member(user_id=member.user_id, project_id=project_id)
@@ -71,11 +66,11 @@ async def create_project_task(project_id: int,
                               task: CreateTaskSchema,
                             session: AsyncSession = Depends(get_session),
                             user_id = Depends(get_current_user)) -> TaskInfoSchema:
-    user_serv = UserServices(session)
+    proj_serv = ProjectServices(session)
     task_serv = TasksService(session)
 
-    await user_serv.is_user_member(task.assignee_id, project_id)
-    await user_serv.check_user_role(user_id, project_id, ["owner"])
+    await proj_serv.is_user_member_of_project(task.assignee_id, project_id)
+    await proj_serv.check_user_permission_by_project_id(user_id, project_id, ["owner"])
 
     try:
         task = await task_serv.create_task(project_id=project_id, task=task)
@@ -87,8 +82,8 @@ async def create_project_task(project_id: int,
 async def get_project_tasks(project_id: int,
                             session: AsyncSession = Depends(get_session),
                             user_id = Depends(get_current_user)) -> List[TaskInfoSchema]:
-    user_serv = UserServices(session)
+    proj_serv = ProjectServices(session)
     task_serv = TasksService(session)
-    await user_serv.check_user_role(user_id, project_id, ["member", "owner"])
+    await proj_serv.check_user_permission_by_project_id(project_id, user_id, ["member", "owner"])
     tasks = await task_serv.get_tasks_by_project_id(project_id)
     return tasks

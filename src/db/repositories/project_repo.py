@@ -5,7 +5,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.testing.suite.test_reflection import users
 
-from src.api.schemas.tasksSchemas import TaskInfoSchema
+from src.api.schemas.tasks_schemas import TaskInfoSchema
 from src.db.models import Project, ProjectMember, Task
 
 
@@ -31,6 +31,14 @@ class ProjectRepository:
         stmt = select(Project).where(Project.id == project_id)
         project = await self.session.execute(stmt)
         return project.scalar_one_or_none()
+
+    async def is_user_member(self, user_id: int, project_id: int) -> bool:
+        stmt = select(ProjectMember).where(
+            ProjectMember.user_id == user_id,
+            ProjectMember.project_id == project_id
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none() is not None
 
 
     async def add_member(self, member: ProjectMember):

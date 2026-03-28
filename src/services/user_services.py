@@ -5,9 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.authorization.hash import hash_password, verify_password
 from src.api.authorization.storage import storage
-from src.api.schemas.userSchemas import UserRegistrationSchema, UserLoginSchema
+from src.api.schemas.user_schemas import UserRegistrationSchema, UserLoginSchema
 from src.db.models import User
-from src.db.repositories.userRepo import UserRepository
+from src.db.repositories.user_repo import UserRepository
 import uuid
 
 class UserServices:
@@ -50,9 +50,5 @@ class UserServices:
         except TypeError:
             raise HTTPException(status_code=403, detail="Not authorized")
         return True
-
-    async def is_user_member(self, user_id: int, project_id: int) -> bool:
-        if not await self.repo.is_user_member(user_id, project_id):
-            raise HTTPException(status_code=404, detail="User is not member of project")
 
 

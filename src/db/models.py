@@ -4,7 +4,7 @@ from typing import Literal, get_args
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, validates, mapped_column, relationship
 
-TaskStatus = Literal["todo", "in_progress", "done"]
+AllowedTaskStatus = Literal["todo", "in_progress", "done"]
 AllowedRoles = Literal['owner', 'member']
 class Base(DeclarativeBase):
     pass
@@ -50,16 +50,17 @@ class Task(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), nullable=False)
     title: Mapped[str] = mapped_column(nullable=False)
-    status: Mapped[TaskStatus] = mapped_column(default='todo',nullable=False)
+    status: Mapped[AllowedTaskStatus] = mapped_column(default='todo', nullable=False)
     description: Mapped[str] = mapped_column(nullable=False)
     assignee_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now())
 
     project = relationship("Project", back_populates="tasks")
+    comments = relationship("Comment", back_populates="task")
 
     @validates("status")
     def validate_status(self, key, status):
-        allowed = get_args(TaskStatus)
+        allowed = get_args(AllowedTaskStatus)
         if status not in allowed:
             raise ValueError(f"Status must be one of {allowed}")
         return status
@@ -72,3 +73,5 @@ class Comment(Base):
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     text: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now())
+
+    project = relationship("Project", back_populates="comments")

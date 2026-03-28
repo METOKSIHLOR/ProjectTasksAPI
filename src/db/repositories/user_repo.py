@@ -45,14 +45,6 @@ class UserRepository:
                    return True
         raise TypeError
 
-    async def is_user_member(self, user_id: int, project_id: int) -> bool:
-        stmt = select(ProjectMember).where(
-            ProjectMember.user_id == user_id,
-            ProjectMember.project_id == project_id
-        )
-        result = await self.session.execute(stmt)
-        return result.scalar_one_or_none() is not None
-
 
     async def commit(self):
         await self.session.commit()
