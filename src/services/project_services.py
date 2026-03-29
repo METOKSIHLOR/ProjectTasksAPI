@@ -43,9 +43,8 @@ class ProjectServices:
         return project
 
     async def get_project_member_by_id(self, project_id, member_id):
-        try:
-            member = await self.repo.get_project_member(project_id, member_id)
-        except ValueError:
+        member = await self.repo.get_project_member(project_id, member_id)
+        if member is None:
             raise HTTPException(status_code=404, detail="Member not found")
         return member
 

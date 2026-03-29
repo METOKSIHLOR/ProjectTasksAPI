@@ -16,7 +16,6 @@ class TasksService:
         self.repo = TasksRepository(session)
         self.project = ProjectServices(session)
     async def create_task(self, project_id: int, user_id: int, task: CreateTaskSchema):
-
        await self.project.check_user_permission_by_project_id(project_id=project_id, user_id=user_id, roles=["owner"])
        assignee = await self.project.get_project_member_by_id(project_id=project_id, member_id=task.assignee_id)
 
