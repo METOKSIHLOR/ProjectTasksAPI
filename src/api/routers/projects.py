@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import get_current_user, get_session
 from src.api.schemas.project_schemas import ProjectSchema, ProjectInfoSchema, ProjectMemberSchema, \
-    ProjectAddMemberSchema
+    ProjectMemberIdSchema, ProjectDeleteSchema
 from src.api.schemas.tasks_schemas import TaskInfoSchema, CreateTaskSchema
 from src.services.project_services import ProjectServices
 from src.services.tasks_services import TasksService
@@ -22,6 +22,14 @@ async def create_project(project: ProjectSchema,
     services = ProjectServices(session)
     project = await services.create_new_project(project, user_id)
     return project
+
+@router.delete("/{project_id}", response_model=ProjectDeleteSchema)
+async def delete_project(project_id: int,
+                         session: AsyncSession = Depends(get_session),
+                         user_id: int = Depends(get_current_user)):
+    services = ProjectServices(session)
+    await services.delete_project(project_id, user_id)
+    return {"success": True}
 
 @router.get("")
 async def get_user_projects(user_id = Depends(get_current_user), session = Depends(get_session)) -> List[ProjectInfoSchema]:
@@ -54,9 +62,9 @@ async def update_project_name(project_id: int,
 
 
 @router.post("/{project_id}/members")
-async def add_project_member(project_id: int, member: ProjectAddMemberSchema,
-                              session: AsyncSession = Depends(get_session),
-                              user_id = Depends(get_current_user)):
+async def add_project_member(project_id: int, member: ProjectMemberIdSchema,
+                             session: AsyncSession = Depends(get_session),
+                             user_id = Depends(get_current_user)):
     """Ручка добавляет в указанную группу нового участника, если пользователь является владельцем"""
     service = ProjectServices(session)
     await service.check_user_permission_by_project_id(project_id=project_id, user_id=user_id, roles=["owner"])
@@ -67,20 +75,24 @@ async def add_project_member(project_id: int, member: ProjectAddMemberSchema,
         raise HTTPException(status_code=409, detail="User is already a member of this project")
     return {"success": True}
 
+@router.delete("/{project_id}/members")
+async def remove_project_member(project_id: int,
+                                member: ProjectMemberIdSchema,
+                                session: AsyncSession = Depends(get_session),
+                                user_id = Depends(get_current_user)):
+    service = ProjectServices(session)
+    await service.remove_member(project_id=project_id, member_id=member.user_id, user_id=user_id)
+    return {"success": True}
+
 @router.post("/{project_id}/tasks")
 async def create_project_task(project_id: int,
                               task: CreateTaskSchema,
                             session: AsyncSession = Depends(get_session),
                             user_id = Depends(get_current_user)) -> TaskInfoSchema:
     """Ручка создает новую таску в указанном проекте"""
-    proj_serv = ProjectServices(session)
     task_serv = TasksService(session)
-
-    await proj_serv.is_user_member_of_project(task.assignee_id, project_id)
-    await proj_serv.check_user_permission_by_project_id(user_id, project_id, ["owner"])
-
     try:
-        task = await task_serv.create_task(project_id=project_id, task=task)
+        task = await task_serv.create_task(project_id=project_id, user_id=user_id, task=task)
     except IntegrityError:
         raise HTTPException(status_code=404, detail="Assignee doens't exists")
     return task
@@ -90,8 +102,6 @@ async def get_project_tasks(project_id: int,
                             session: AsyncSession = Depends(get_session),
                             user_id = Depends(get_current_user)) -> List[TaskInfoSchema]:
     """Ручка возвращает все таски в этом проекте"""
-    proj_serv = ProjectServices(session)
     task_serv = TasksService(session)
-    await proj_serv.check_user_permission_by_project_id(project_id, user_id, ["member", "owner"])
-    tasks = await task_serv.get_tasks_by_project_id(project_id)
+    tasks = await task_serv.get_tasks_by_project_id(project_id=project_id, user_id=user_id)
     return tasks

@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import DataError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.schemas.project_schemas import ProjectSchema, ProjectAddMemberSchema
+from src.api.schemas.project_schemas import ProjectSchema, ProjectMemberIdSchema
 from src.api.schemas.tasks_schemas import TaskInfoSchema
 from src.db.models import Project, ProjectMember
 from src.db.repositories.project_repo import ProjectRepository
@@ -16,17 +16,6 @@ class ProjectServices:
     def __init__(self, session):
         self.repo = ProjectRepository(session)
 
-    async def create_new_project(self, project: ProjectSchema, user_id: int):
-        project = await self.repo.create_project(Project(name=project.name, owner_id=user_id))
-        await self.repo.commit()
-        return project
-
-    async def get_project_by_id(self, project_id):
-        project = await self.repo.get_project_by_id(project_id)
-        if project is None:
-            raise HTTPException(status_code=404, detail="Project not found")
-        return project
-
     async def check_user_permission_by_project_id(self, project_id: int, user_id: int, roles: List[str]):
         project = await self.repo.get_project_by_id(project_id)
         user_serv = UserServices(self.repo.session)
@@ -34,10 +23,42 @@ class ProjectServices:
 
         return project
 
+    async def create_new_project(self, project: ProjectSchema, user_id: int):
+        project = await self.repo.create_project(Project(name=project.name, owner_id=user_id))
+        await self.repo.commit()
+        return project
+
+    async def get_project_by_id(self, project_id):
+        try:
+            project = await self.repo.get_project_by_id(project_id)
+        except ValueError:
+            raise HTTPException(status_code=404, detail="Project not found")
+        return project
+
+    async def delete_project(self, project_id, user_id):
+        await self.check_user_permission_by_project_id(project_id, user_id, ['owner'])
+        project = await self.repo.get_project_by_id(project_id)
+        await self.repo.delete_project(project)
+        await self.repo.commit()
+        return project
+
+    async def get_project_member_by_id(self, project_id, member_id):
+        try:
+            member = await self.repo.get_project_member(project_id, member_id)
+        except ValueError:
+            raise HTTPException(status_code=404, detail="Member not found")
+        return member
+
     async def add_member(self, project_id: int, user_id: int):
         user_serv = UserServices(self.repo.session)
         await user_serv.get_user_by_id(user_id=user_id)
         member = await self.repo.add_member(ProjectMember(project_id=project_id, user_id=user_id))
+        await self.repo.commit()
+        return member
+
+    async def remove_member(self, project_id: int, member_id: int, user_id: int):
+        await self.check_user_permission_by_project_id(project_id=project_id, user_id=user_id, roles=["owner"])
+        member = await self.repo.remove_member(project_id=project_id, member_id=member_id)
         await self.repo.commit()
         return member
 
@@ -50,9 +71,6 @@ class ProjectServices:
         await self.repo.commit()
         return project
 
-    async def is_user_member_of_project(self, user_id: int, project_id: int):
-        if not await self.repo.is_user_member(user_id, project_id):
-            raise HTTPException(status_code=404, detail="User is not member of project")
 
 
 

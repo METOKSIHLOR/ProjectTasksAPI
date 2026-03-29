@@ -19,12 +19,6 @@ async def connect_db():
         expire_on_commit=False,
     )
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
 async def close_db():
     if engine:
-        #async with engine.begin() as conn:
-         #   await conn.run_sync(Base.metadata.drop_all)
-
         await engine.dispose()

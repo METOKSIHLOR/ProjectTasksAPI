@@ -24,14 +24,22 @@ class Project(Base):
     name: Mapped[str] = mapped_column(nullable=False)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
 
-    members = relationship("ProjectMember", back_populates="project", lazy="selectin")
-    tasks = relationship("Task", back_populates="project", lazy="selectin")
+    members = relationship("ProjectMember",
+                           back_populates="project",
+                           lazy="selectin",
+                           cascade="all, delete-orphan",
+                           passive_deletes=True)
+    tasks = relationship("Task",
+                         back_populates="project",
+                         lazy="selectin",
+                         cascade="all, delete-orphan",
+                         passive_deletes=True)
 
 class ProjectMember(Base):
     __tablename__ = "project_members"
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
-    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True,)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), primary_key=True)
     role: Mapped[str] = mapped_column(default='member', nullable=False)
 
     user = relationship("User", back_populates="memberships")
@@ -48,7 +56,7 @@ class Task(Base):
     __tablename__ = "tasks"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), nullable=False)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     title: Mapped[str] = mapped_column(nullable=False)
     status: Mapped[AllowedTaskStatus] = mapped_column(default='todo', nullable=False)
     description: Mapped[str] = mapped_column(nullable=False)
@@ -56,7 +64,10 @@ class Task(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.now())
 
     project = relationship("Project", back_populates="tasks")
-    comments = relationship("Comment", back_populates="task")
+    comments = relationship("Comment",
+                            back_populates="task",
+                            cascade="all, delete-orphan",
+                            passive_deletes=True)
 
     @validates("status")
     def validate_status(self, key, status):
@@ -69,7 +80,7 @@ class Comment(Base):
     __tablename__ = "comments"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"), nullable=False)
+    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False,)
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     text: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now())

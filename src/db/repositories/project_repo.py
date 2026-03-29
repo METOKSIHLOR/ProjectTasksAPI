@@ -27,6 +27,7 @@ class ProjectRepository:
         await self.session.flush()
         return project
 
+
     async def get_project_by_id(self, project_id: int):
         stmt = select(Project).where(Project.id == project_id)
         project = await self.session.execute(stmt)
@@ -34,16 +35,26 @@ class ProjectRepository:
             raise ValueError("Project not found")
         return project.scalar_one_or_none()
 
-    async def is_user_member(self, user_id: int, project_id: int) -> bool:
-        stmt = select(ProjectMember).where(
-            ProjectMember.user_id == user_id,
-            ProjectMember.project_id == project_id
-        )
-        result = await self.session.execute(stmt)
-        return result.scalar_one_or_none() is not None
+    async def delete_project(self, project: Project):
+        await self.session.delete(project)
+        await self.session.flush()
+        return project
 
     async def add_member(self, member: ProjectMember):
         self.session.add(member)
+        await self.session.flush()
+        return member
+
+    async def get_project_member(self, project_id: int, member_id):
+        stmt = select(ProjectMember).where(and_(ProjectMember.project_id == project_id, ProjectMember.user_id == member_id))
+        member = await self.session.execute(stmt)
+        if not member:
+            raise ValueError("Project member not found")
+        return member.scalar_one_or_none()
+
+    async def remove_member(self, project_id: int, member_id: int):
+        member = await self.get_project_member(project_id, member_id)
+        await self.session.delete(member)
         await self.session.flush()
         return member
 
