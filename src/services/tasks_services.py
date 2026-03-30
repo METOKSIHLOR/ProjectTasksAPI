@@ -57,19 +57,11 @@ class TasksService:
 
     async def delete_task(self, user_id: int, task_id: int, project_id: int):
         task = await self.get_task_check_user_permission_by_task_id(project_id=project_id, task_id=task_id, user_id=user_id, roles=["owner"])
-
-        if task.project_id != project_id:
-            raise HTTPException(status_code=404, detail="Task not found")
-
         await self.repo.delete_task(task)
         await self.repo.commit()
 
     async def update_task(self, user_id: int, task_id: int, project_id, new_task: UpdateTaskSchema):
         task = await self.get_task_check_user_permission_by_task_id(project_id=project_id, task_id=task_id, user_id=user_id, roles=["owner"])
-
-        if task.project_id != project_id:
-            raise HTTPException(status_code=404, detail="Task not found")
-
         await self.repo.update_task(task=task, new_task=new_task.model_dump(exclude_unset=True))
         await self.repo.commit()
         return task

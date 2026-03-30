@@ -8,7 +8,7 @@ from src.api.dependencies import get_current_user, get_session
 from src.api.schemas.tasks_schemas import UpdateTaskSchema, CreateTaskSchema, TaskInfoSchema
 from src.services.tasks_services import TasksService
 
-router = APIRouter(prefix="/{project_id}/tasks", tags=["tasks"])
+router = APIRouter(prefix="/projects/{project_id}/tasks", tags=["tasks"])
 
 @router.post("")
 async def create_project_task(project_id: int,
