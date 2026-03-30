@@ -15,11 +15,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def register_user(user: UserRegistrationSchema, session: AsyncSession = Depends(get_session)):
     """Добавление нового пользователя в бд"""
     service = UserServices(session)
-    try:
-        user = await service.register(user) # добавляем пользователя
-    except IntegrityError: # если имя или почта уже заняты
-        await session.rollback()
-        raise HTTPException(status_code=400, detail="This email already exists")
+    user = await service.register(user) # добавляем пользователя
     return user
 
 @router.post("/auth/login")

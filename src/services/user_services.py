@@ -1,6 +1,7 @@
 from typing import List
 
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 
 from src.api.authorization.hash import hash_password, verify_password
 from src.api.authorization.storage import storage
@@ -17,7 +18,11 @@ class UserServices:
         hash_pw = hash_password(schema.password)
         model = User(name=schema.name, email=schema.email, hash_password=hash_pw)
 
-        user = await self.repo.create_user(model)
+        try:
+            user = await self.repo.create_user(model)
+        except IntegrityError:  # если почта уже занята
+            raise HTTPException(status_code=409, detail="This email already exists")
+
         await self.repo.commit()
 
         return user
@@ -26,7 +31,7 @@ class UserServices:
         user = await self.repo.get_user_by_email(schema.email)
 
         if user is None or not verify_password(schema.password, user.hash_password):
-            raise HTTPException(status_code=404, detail="Incorrect email or password")
+            raise HTTPException(status_code=401, detail="Incorrect email or password")
 
         session_id = str(uuid.uuid4())
 
