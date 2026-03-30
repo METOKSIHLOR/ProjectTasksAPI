@@ -66,7 +66,7 @@ class ProjectServices:
 
         member = await self.repo.get_project_member(project_id, member_id)
 
-        if not member:
+        if member is None:
             raise HTTPException(status_code=404, detail="Member not found")
 
         await self.repo.remove_member(member=member)

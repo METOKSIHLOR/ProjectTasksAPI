@@ -26,7 +26,7 @@ class UserServices:
     async def auth(self, schema: UserLoginSchema):
         user = await self.repo.get_user_by_email(schema.email)
 
-        if not user or not verify_password(schema.password, user.hash_password):
+        if user is None or not verify_password(schema.password, user.hash_password):
             raise HTTPException(status_code=404, detail="Incorrect email or password")
 
         session_id = str(uuid.uuid4())

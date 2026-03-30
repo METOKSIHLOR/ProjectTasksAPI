@@ -41,7 +41,7 @@ async def login(user: UserLoginSchema, response: Response, session: AsyncSession
 async def logout(response: Response, session_id = Cookie(None)):
     """Разлогин пользователя. Тут все просто"""
 
-    if not session_id:
+    if session_id is None:
         raise HTTPException(status_code=401, detail="Not authorized")
 
     response.delete_cookie(key="session_id") # удаляем из куков сессию
