@@ -11,10 +11,17 @@ class Postrges:
     db: str
     url: str
 
+@dataclass
+class Redis:
+    host: str
+    port: int
+    db: int
+
 # валидация данных для итогового класса конфигурации
 @dataclass
 class Config:
     postrges: Postrges
+    redis: Redis
 
 # подстановка всех чувствительных данных из .env
 def load_config(path: str | None = None):
@@ -26,7 +33,10 @@ def load_config(path: str | None = None):
             password=env("POSTGRES_PASSWORD"),
             db=env("POSTGRES_DB"),
             url=env("POSTGRES_URL"),
-                          )
+                          ),
+        redis=Redis(host=env("REDIS_HOST"),
+                    port=env.int("REDIS_PORT"),
+                    db=env.int("REDIS_DB"),),
     )
 
 # получаем обьект конфига, который и используем в других модулях при необходимости

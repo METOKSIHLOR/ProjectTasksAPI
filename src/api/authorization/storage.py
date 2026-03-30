@@ -1,4 +1,8 @@
 """Просто инициализация редиса, ни больше, ни меньше:)"""
 import redis
+from src.config.config import config
 
-storage = redis.Redis(host="redis", port=6379, db=0, decode_responses=True)
+storage = redis.Redis(host=config.redis.host,
+                      port=config.redis.port,
+                      db=config.redis.db,
+                      decode_responses=True)
