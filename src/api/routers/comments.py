@@ -3,12 +3,21 @@ from typing import List
 from fastapi import APIRouter, Depends
 
 from src.api.dependencies import get_current_user, get_session
-from src.api.schemas.comments_schemas import CommentInfoSchema, CommentUpdateSchema
+from src.api.schemas.comments_schemas import CommentInfoSchema, CommentUpdateSchema, CreateCommentSchema
 from src.services.comments_services import CommentsServices
 
-router = APIRouter(tags=['comments'])
+router = APIRouter(tags=['comments'], prefix='/tasks/{task_id}')
 
-@router.get("/{task_id}/comments")
+@router.post("/comments")
+async def create_comment_in_task(task_id: int,
+                         comment: CreateCommentSchema,
+                       user_id: int = Depends(get_current_user),
+                       session = Depends(get_session)):
+    comm_service = CommentsServices(session)
+    await comm_service.create_comment(task_id=task_id, author_id=user_id, text=comment.text)
+    return {"success": True}
+
+@router.get("/comments")
 async def get_comments(task_id: int,
                        user_id: int = Depends(get_current_user),
                        session = Depends(get_session)) -> List[CommentInfoSchema]:
@@ -17,18 +26,20 @@ async def get_comments(task_id: int,
     return comments
 
 @router.patch("/comments/{comment_id}")
-async def update_comments(comment_id: int,
+async def update_comments(task_id: int,
+                          comment_id: int,
                           update: CommentUpdateSchema,
                           user_id: int = Depends(get_current_user),
                           session = Depends(get_session)):
     service = CommentsServices(session)
-    await service.update_comment(user_id=user_id, text=update.text, comment_id=comment_id)
+    await service.update_comment(user_id=user_id, text=update.text, comment_id=comment_id, task_id=task_id)
     return {"success": True}
 
 @router.delete("/comments/{comment_id}")
-async def delete_comments(comment_id: int,
+async def delete_comments(task_id: int,
+                          comment_id: int,
                           user_id: int = Depends(get_current_user),
                           session = Depends(get_session)):
     service = CommentsServices(session)
-    await service.delete_comment(comment_id=comment_id, user_id=user_id)
+    await service.delete_comment(comment_id=comment_id, user_id=user_id, task_id=task_id)
     return {"Success": True}

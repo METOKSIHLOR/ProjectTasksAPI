@@ -83,25 +83,3 @@ async def remove_project_member(project_id: int,
     service = ProjectServices(session)
     await service.remove_member(project_id=project_id, member_id=member.user_id, user_id=user_id)
     return {"success": True}
-
-@router.post("/{project_id}/tasks")
-async def create_project_task(project_id: int,
-                              task: CreateTaskSchema,
-                            session: AsyncSession = Depends(get_session),
-                            user_id = Depends(get_current_user)) -> TaskInfoSchema:
-    """Ручка создает новую таску в указанном проекте"""
-    task_serv = TasksService(session)
-    try:
-        task = await task_serv.create_task(project_id=project_id, user_id=user_id, task=task)
-    except IntegrityError:
-        raise HTTPException(status_code=404, detail="Assignee doens't exists")
-    return task
-
-@router.get("/{project_id}/tasks")
-async def get_project_tasks(project_id: int,
-                            session: AsyncSession = Depends(get_session),
-                            user_id = Depends(get_current_user)) -> List[TaskInfoSchema]:
-    """Ручка возвращает все таски в этом проекте"""
-    task_serv = TasksService(session)
-    tasks = await task_serv.get_tasks_by_project_id(project_id=project_id, user_id=user_id)
-    return tasks

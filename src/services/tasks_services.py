@@ -19,6 +19,9 @@ class TasksService:
        await self.project.check_user_permission_by_project_id(project_id=project_id, user_id=user_id, roles=["owner"])
        assignee = await self.project.get_project_member_by_id(project_id=project_id, member_id=task.assignee_id)
 
+       if assignee is None:
+           raise HTTPException(status_code=404, detail="Assignee doens't exists")
+
        task = await self.repo.create_task(Task(
             project_id=project_id,
             title=task.title,

@@ -58,7 +58,7 @@ class ProjectRepository:
         await self.session.flush()
         return member
 
-    async def update_project_name(self, user_id: int, project_id: int, name: str):
+    async def update_project_name(self, project_id: int, name: str):
         project = await self.get_project_by_id(project_id)
         project.name = name
         await self.session.flush()

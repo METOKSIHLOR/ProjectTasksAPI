@@ -57,6 +57,9 @@ class ProjectServices:
 
     async def remove_member(self, project_id: int, member_id: int, user_id: int):
         await self.check_user_permission_by_project_id(project_id=project_id, user_id=user_id, roles=["owner"])
+        if member_id == user_id:
+            raise HTTPException(status_code=403, detail="Self delete does not allow")
+
         member = await self.repo.remove_member(project_id=project_id, member_id=member_id)
         await self.repo.commit()
         return member

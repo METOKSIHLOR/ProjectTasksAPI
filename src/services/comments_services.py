@@ -27,18 +27,30 @@ class CommentsServices:
         comments = await self.repo.get_comments(task_id=task_id)
         return comments
 
-    async def update_comment(self, comment_id, user_id, text):
-        try:
-            comment = await self.repo.update_comment(user_id=user_id, text=text, comment_id=comment_id)
-        except ValueError as e:
-            raise HTTPException(status_code=403, detail=str(e))
+    async def update_comment(self, comment_id, task_id, user_id, text):
+        comment = await self.get_comment_belong_to_task(comment_id, task_id)
+
+        if comment.author_id != user_id:
+            raise HTTPException(status_code=404, detail="Comment doesn't belong to user")
+
+        await self.repo.update_comment(comment=comment, text=text)
         await self.repo.commit()
         return comment
 
-    async def delete_comment(self, comment_id, user_id):
-        try:
-            comment = await self.repo.delete_comment(comment_id=comment_id, user_id=user_id)
-        except ValueError as e:
-            raise HTTPException(status_code=403, detail=str(e))
+
+    async def delete_comment(self, comment_id, task_id, user_id):
+        comment = await self.get_comment_belong_to_task(comment_id=comment_id, task_id=task_id)
+
+        if comment.author_id != user_id:
+            raise HTTPException(status_code=404, detail="Comment doesn't belong to user")
+
+        await self.repo.delete_comment(comment)
+
         await self.repo.commit()
+        return comment
+
+    async def get_comment_belong_to_task(self, comment_id, task_id):
+        comment = await self.repo.get_comment_in_task(comment_id=comment_id, task_id=task_id)
+        if comment is None:
+            raise HTTPException(status_code=404, detail="In this task this comment does not exist")
         return comment
