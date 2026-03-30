@@ -46,7 +46,7 @@ async def logout(response: Response, session_id = Cookie(None)):
 
     response.delete_cookie(key="session_id") # удаляем из куков сессию
 
-    storage.delete(session_id) # удаляем из хранилища сессию
+    await storage.delete(session_id) # удаляем из хранилища сессию
 
     return {"success": True}
 

@@ -14,7 +14,7 @@ async def get_current_user(session_id = Cookie(None)):
     if session_id is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    user_id = storage.get(session_id) # достаем айди из редиса
+    user_id = await storage.get(session_id) # достаем айди из редиса
 
     if user_id is None: # если сессия в куках не совпадает с сессиями в хранилище
         raise HTTPException(status_code=401, detail="Invalid session")

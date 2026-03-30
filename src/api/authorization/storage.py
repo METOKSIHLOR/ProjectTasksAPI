@@ -1,5 +1,5 @@
 """Просто инициализация редиса, ни больше, ни меньше:)"""
-import redis
+import redis.asyncio as redis
 from src.config.config import config
 
 storage = redis.Redis(host=config.redis.host,
