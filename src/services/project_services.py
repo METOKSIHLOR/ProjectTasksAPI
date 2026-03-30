@@ -16,8 +16,12 @@ class ProjectServices:
     def __init__(self, session):
         self.repo = ProjectRepository(session)
 
-    async def check_user_permission_by_project_id(self, project_id: int, user_id: int, roles: List[str]):
+    async def get_project_and_check_user_permission_by_project_id(self, project_id: int, user_id: int, roles: List[str]):
         project = await self.repo.get_project_by_id(project_id)
+
+        if project is None:
+            raise HTTPException(status_code=404, detail="Project not found")
+
         user_serv = UserServices(self.repo.session)
         await user_serv.check_user_role(user_id=user_id, project_id=project.id, roles=roles)
 
@@ -35,7 +39,7 @@ class ProjectServices:
         return project
 
     async def delete_project(self, project_id, user_id):
-        await self.check_user_permission_by_project_id(project_id, user_id, ['owner'])
+        await self.get_project_and_check_user_permission_by_project_id(project_id, user_id, ['owner'])
         project = await self.repo.get_project_by_id(project_id)
         await self.repo.delete_project(project)
         await self.repo.commit()
@@ -55,20 +59,24 @@ class ProjectServices:
         return member
 
     async def remove_member(self, project_id: int, member_id: int, user_id: int):
-        await self.check_user_permission_by_project_id(project_id=project_id, user_id=user_id, roles=["owner"])
+        await self.get_project_and_check_user_permission_by_project_id(project_id=project_id, user_id=user_id,
+                                                                       roles=["owner"])
         if member_id == user_id:
             raise HTTPException(status_code=403, detail="Self delete does not allow")
 
-        member = await self.repo.remove_member(project_id=project_id, member_id=member_id)
+        member = await self.repo.get_project_member(project_id, member_id)
+
+        if not member:
+            raise HTTPException(status_code=404, detail="Member not found")
+
+        await self.repo.remove_member(member=member)
         await self.repo.commit()
         return member
 
     async def update_project_name(self, user_id: int, project_id: int, name: str):
-        await self.check_user_permission_by_project_id(user_id=user_id, project_id=project_id, roles=["owner"])
-        try:
-            project = await self.repo.update_project_name(user_id=user_id, project_id=project_id, name=name)
-        except ValueError as e:
-            raise HTTPException(status_code=404, detail=str(e))
+        project = await self.get_project_and_check_user_permission_by_project_id(project_id=project_id, user_id=user_id,
+                                                                                 roles=["owner"])
+        project = await self.repo.update_project_name(project=project, name=name)
         await self.repo.commit()
         return project
 

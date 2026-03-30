@@ -46,18 +46,14 @@ class ProjectRepository:
     async def get_project_member(self, project_id: int, member_id):
         stmt = select(ProjectMember).where(and_(ProjectMember.project_id == project_id, ProjectMember.user_id == member_id))
         member = await self.session.execute(stmt)
-        if not member:
-            raise ValueError("Project member not found")
         return member.scalar_one_or_none()
 
-    async def remove_member(self, project_id: int, member_id: int):
-        member = await self.get_project_member(project_id, member_id)
+    async def remove_member(self, member: ProjectMember):
         await self.session.delete(member)
         await self.session.flush()
         return member
 
-    async def update_project_name(self, project_id: int, name: str):
-        project = await self.get_project_by_id(project_id)
+    async def update_project_name(self, project: Project, name: str):
         project.name = name
         await self.session.flush()
         return project

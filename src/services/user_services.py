@@ -27,7 +27,7 @@ class UserServices:
         user = await self.repo.get_user_by_email(schema.email)
 
         if not user or not verify_password(schema.password, user.hash_password):
-            raise ValueError
+            raise HTTPException(status_code=404, detail="Incorrect email or password")
 
         session_id = str(uuid.uuid4())
 
@@ -38,7 +38,7 @@ class UserServices:
 
     async def get_user_by_id(self, user_id):
         user = await self.repo.get_user_by_id(user_id)
-        if not user:
+        if user is None:
             raise HTTPException(status_code=404, detail="User not found")
         return user
 

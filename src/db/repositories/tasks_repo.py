@@ -15,7 +15,6 @@ class TasksRepository:
     async def get_project_tasks(self, project_id: int):
         stmt = select(Task).where(Task.project_id == project_id)
         tasks = await self.session.execute(stmt)
-        await self.session.flush()
         return tasks.scalars().all()
 
     async def get_task_by_id(self, task_id: int):

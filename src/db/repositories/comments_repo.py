@@ -22,15 +22,6 @@ class CommentsRepository:
         comment = await self.session.execute(stmt)
         return comment.scalar_one_or_none()
 
-
-    async def is_comment_belong_to_user(self, comment_id: int, user_id: int):
-        comment = await self.get_comment_by_id(comment_id)
-        if comment is None:
-            raise ValueError(f"Comment with id {comment_id} not found")
-        if comment.author_id != user_id:
-            raise ValueError(f"Comment with id {comment_id} does not belong to user")
-        return comment.scalar_one_or_none()
-
     async def get_comment_in_task(self, comment_id: int, task_id: int):
         stmt = select(Comment).where(and_(Comment.task_id == task_id, Comment.id == comment_id))
         comment = await self.session.execute(stmt)

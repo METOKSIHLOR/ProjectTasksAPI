@@ -27,12 +27,8 @@ async def register_user(user: UserRegistrationSchema, session: AsyncSession = De
 async def login(user: UserLoginSchema, response: Response, session: AsyncSession = Depends(get_session)):
     """Ручка реализует аутентификацию пользователя через сесси и куки"""
     service = UserServices(session)
-    try:
-        """проверка входных данных пользователя и добавление айди сессии в редис в случае успеха"""
-        session_id = await service.auth(user)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Incorrect email or password")
-
+    """проверка входных данных пользователя и добавление айди сессии в редис в случае успеха"""
+    session_id = await service.auth(user)
     response.set_cookie(key="session_id", #добавление айди сессии в куки с временем жизни в 1 час
                         value=session_id,
                         max_age=3600,
@@ -42,8 +38,9 @@ async def login(user: UserLoginSchema, response: Response, session: AsyncSession
     return {"success": True}
 
 @router.post("/auth/logout")
-async def logout(response: Response,session_id = Cookie(None)):
+async def logout(response: Response, session_id = Cookie(None)):
     """Разлогин пользователя. Тут все просто"""
+
     if not session_id:
         raise HTTPException(status_code=401, detail="Not authorized")
 
@@ -58,6 +55,4 @@ async def get_user(user_id: int = Depends(get_current_user), session: AsyncSessi
     """Пользователь получает данные о своем аккаунте, айди узнается по номеру его сессии в куках"""
     service = UserServices(session)
     user = await service.get_user_by_id(user_id) # получаем юзера
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
     return user
