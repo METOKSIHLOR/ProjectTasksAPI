@@ -15,7 +15,7 @@ config = context.config
 
 con = load_config()
 section = config.config_ini_section
-config.set_section_option(section,"sqlalchemy.url", con.postrges.url)
+config.set_section_option(section,"sqlalchemy.url", con.postgres.url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

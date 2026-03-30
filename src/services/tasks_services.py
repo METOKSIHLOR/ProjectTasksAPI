@@ -20,7 +20,7 @@ class TasksService:
        assignee = await self.project.get_project_member_by_id(project_id=project_id, member_id=task.assignee_id)
 
        if assignee is None:
-           raise HTTPException(status_code=404, detail="Assignee doens't exists")
+           raise HTTPException(status_code=404, detail="Assignee doesn't exists")
 
        task = await self.repo.create_task(Task(
             project_id=project_id,
@@ -32,7 +32,13 @@ class TasksService:
        await self.repo.commit()
        return task
 
-    async def get_task_check_user_permission_by_task_id(self, task_id: int, user_id: int, roles: List[str]):
+    async def check_task_in_this_project(self, task_id, project_id):
+        task = await self.repo.get_task_by_project(project_id=project_id, task_id=task_id)
+        if task is None:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+    async def get_task_check_user_permission_by_task_id(self, project_id: int, task_id: int, user_id: int, roles: List[str]):
+        await self.check_task_in_this_project(task_id=task_id, project_id=project_id)
         task = await self.repo.get_task_by_id(task_id)
         user_serv = UserServices(self.repo.session)
         if task is None:
@@ -50,7 +56,7 @@ class TasksService:
 
 
     async def delete_task(self, user_id: int, task_id: int, project_id: int):
-        task = await self.get_task_check_user_permission_by_task_id(task_id=task_id, user_id=user_id, roles=["owner"])
+        task = await self.get_task_check_user_permission_by_task_id(project_id=project_id, task_id=task_id, user_id=user_id, roles=["owner"])
 
         if task.project_id != project_id:
             raise HTTPException(status_code=404, detail="Task not found")
@@ -59,7 +65,7 @@ class TasksService:
         await self.repo.commit()
 
     async def update_task(self, user_id: int, task_id: int, project_id, new_task: UpdateTaskSchema):
-        task = await self.get_task_check_user_permission_by_task_id(task_id=task_id, user_id=user_id, roles=["owner"])
+        task = await self.get_task_check_user_permission_by_task_id(project_id=project_id, task_id=task_id, user_id=user_id, roles=["owner"])
 
         if task.project_id != project_id:
             raise HTTPException(status_code=404, detail="Task not found")

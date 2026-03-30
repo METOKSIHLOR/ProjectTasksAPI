@@ -4,7 +4,7 @@ from environs import Env
 
 # валидация данных для постгреса
 @dataclass
-class Postrges:
+class Postgres:
     user: str
     password: str
     db: str
@@ -19,7 +19,7 @@ class Redis:
 # валидация данных для итогового класса конфигурации
 @dataclass
 class Config:
-    postrges: Postrges
+    postgres: Postgres
     redis: Redis
 
 # подстановка всех чувствительных данных из .env
@@ -27,7 +27,7 @@ def load_config(path: str | None = None):
     env = Env()
     env.read_env(path) # путь к .env. По умолчанию None, ищет в корне проекта
     return Config(
-        postrges=Postrges(
+        postgres=Postgres(
             user=env("POSTGRES_USER"),
             password=env("POSTGRES_PASSWORD"),
             db=env("POSTGRES_DB"),

@@ -8,7 +8,7 @@ SessionFactory: async_sessionmaker[AsyncSession] | None = None
 async def connect_db():
     global engine, SessionFactory
     engine = create_async_engine(
-        url=config.postrges.url,
+        url=config.postgres.url,
         pool_pre_ping=True,
     )
 

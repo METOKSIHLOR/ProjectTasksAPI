@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, and_
 
 from src.db.models import Task
 
@@ -10,6 +10,11 @@ class TasksRepository:
         self.session.add(task)
         await self.session.flush()
         return task
+
+    async def get_task_by_project(self, task_id, project_id):
+        stmt = select(Task).where(and_(Task.project_id == project_id, Task.id == task_id))
+        task = await self.session.execute(stmt)
+        return task.scalar_one_or_none()
 
     async def get_project_tasks(self, project_id: int):
         stmt = select(Task).where(Task.project_id == project_id)
