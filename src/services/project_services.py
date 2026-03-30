@@ -1,12 +1,9 @@
-from typing import Literal, List
+from typing import List
 
 
 from fastapi import HTTPException
-from sqlalchemy.exc import DataError
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.schemas.project_schemas import ProjectSchema, ProjectMemberIdSchema
-from src.api.schemas.tasks_schemas import TaskInfoSchema
+from src.api.schemas.project_schemas import ProjectSchema
 from src.db.models import Project, ProjectMember
 from src.db.repositories.project_repo import ProjectRepository
 from src.services.user_services import UserServices

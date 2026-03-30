@@ -1,12 +1,7 @@
-from enum import member
-from typing import List
-
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.testing.suite.test_reflection import users
 
-from src.api.schemas.tasks_schemas import TaskInfoSchema
-from src.db.models import Project, ProjectMember, Task
+from src.db.models import Project, ProjectMember
 
 
 class ProjectRepository:

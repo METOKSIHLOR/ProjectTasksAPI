@@ -5,11 +5,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import get_current_user, get_session
-from src.api.schemas.project_schemas import ProjectSchema, ProjectInfoSchema, ProjectMemberSchema, \
-    ProjectMemberIdSchema, ProjectDeleteSchema
-from src.api.schemas.tasks_schemas import TaskInfoSchema, CreateTaskSchema
+from src.api.schemas.project_schemas import ProjectSchema, ProjectInfoSchema, ProjectMemberIdSchema, ProjectDeleteSchema
 from src.services.project_services import ProjectServices
-from src.services.tasks_services import TasksService
 from src.services.user_services import UserServices
 
 router = APIRouter(prefix="/projects", tags=["projects"])

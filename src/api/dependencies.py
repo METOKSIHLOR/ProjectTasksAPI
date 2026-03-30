@@ -1,5 +1,4 @@
-from fastapi import Cookie, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Cookie, HTTPException
 import src.db.session as sess
 from src.api.authorization.storage import storage
 

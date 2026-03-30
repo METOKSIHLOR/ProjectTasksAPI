@@ -1,17 +1,12 @@
 from typing import List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi.params import Depends
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import get_current_user, get_session
-from src.api.schemas.comments_schemas import CreateCommentSchema, CommentInfoSchema, CommentUpdateSchema
 from src.api.schemas.tasks_schemas import UpdateTaskSchema, CreateTaskSchema, TaskInfoSchema
-from src.services.comments_services import CommentsServices
-from src.services.project_services import ProjectServices
 from src.services.tasks_services import TasksService
-from src.services.user_services import UserServices
 
 router = APIRouter(prefix="/{project_id}/tasks", tags=["tasks"])
 

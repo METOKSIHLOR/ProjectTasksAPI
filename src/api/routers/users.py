@@ -1,13 +1,12 @@
 from fastapi import APIRouter, HTTPException
 from fastapi import Response
-from fastapi.params import Depends, Query, Cookie
+from fastapi.params import Depends, Cookie
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.authorization.storage import storage
 from src.api.dependencies import get_session, get_current_user
 from src.api.schemas.user_schemas import UserRegistrationSchema, UserResponseSchema, UserLoginSchema
-from src.db.repositories.user_repo import UserRepository
 from src.services.user_services import UserServices
 
 router = APIRouter(prefix="/users", tags=["users"])

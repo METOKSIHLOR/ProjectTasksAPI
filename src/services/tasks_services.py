@@ -1,12 +1,9 @@
 from typing import List
 
 from fastapi import HTTPException
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 
 from src.api.schemas.tasks_schemas import CreateTaskSchema, UpdateTaskSchema
 from src.db.models import Task
-from src.db.repositories.project_repo import ProjectRepository
 from src.db.repositories.tasks_repo import TasksRepository
 from src.services.project_services import ProjectServices
 from src.services.user_services import UserServices

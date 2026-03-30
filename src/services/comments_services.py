@@ -2,7 +2,6 @@ from fastapi import HTTPException
 
 from src.db.models import Comment
 from src.db.repositories.comments_repo import CommentsRepository
-from src.db.repositories.tasks_repo import TasksRepository
 from src.services.tasks_services import TasksService
 
 

@@ -1,6 +1,5 @@
 from sqlalchemy import select
 
-from src.api.schemas.tasks_schemas import UpdateTaskSchema
 from src.db.models import Task
 
 class TasksRepository:
@@ -29,7 +28,7 @@ class TasksRepository:
 
     async def update_task(self, task: Task, new_task: dict):
         for key, value in new_task.items():
-            if value is not "":
+            if value != "":
                 setattr(task, key, value)
 
         await self.session.flush()

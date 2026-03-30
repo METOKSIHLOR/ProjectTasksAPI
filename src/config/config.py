@@ -1,5 +1,4 @@
 """этот модуль берет данные из переменных окружения и возвращает их не показывая чувствительные данные"""
-
 from dataclasses import dataclass
 from environs import Env
 
