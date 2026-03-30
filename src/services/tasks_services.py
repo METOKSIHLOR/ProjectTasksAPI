@@ -2,6 +2,7 @@ from typing import List
 
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from src.api.schemas.tasks_schemas import CreateTaskSchema, UpdateTaskSchema
 from src.db.models import Task
@@ -15,6 +16,7 @@ class TasksService:
     def __init__(self, session):
         self.repo = TasksRepository(session)
         self.project = ProjectServices(session)
+
     async def create_task(self, project_id: int, user_id: int, task: CreateTaskSchema):
        await self.project.check_user_permission_by_project_id(project_id=project_id, user_id=user_id, roles=["owner"])
        assignee = await self.project.get_project_member_by_id(project_id=project_id, member_id=task.assignee_id)
@@ -32,7 +34,7 @@ class TasksService:
        await self.repo.commit()
        return task
 
-    async def check_user_permission_by_task_id(self, task_id: int, user_id: int, roles: List[str]):
+    async def get_task_check_user_permission_by_task_id(self, task_id: int, user_id: int, roles: List[str]):
         task = await self.repo.get_task_by_id(task_id)
         user_serv = UserServices(self.repo.session)
         if task is None:
@@ -45,17 +47,24 @@ class TasksService:
     async def get_tasks_by_project_id(self, project_id: int, user_id: int):
         await self.project.check_user_permission_by_project_id(project_id=project_id, user_id=user_id, roles=["member","owner"])
         tasks = await self.repo.get_project_tasks(project_id)
-        await self.repo.commit()
-        return tasks.scalars().all()
+        return tasks
 
 
-    async def delete_task(self, user_id: int, task_id: int):
-        task = await self.check_user_permission_by_task_id(task_id=task_id, user_id=user_id, roles=["owner"])
+    async def delete_task(self, user_id: int, task_id: int, project_id: int):
+        task = await self.get_task_check_user_permission_by_task_id(task_id=task_id, user_id=user_id, roles=["owner"])
+
+        if task.project_id != project_id:
+            raise HTTPException(status_code=404, detail="Task not found")
+
         await self.repo.delete_task(task)
         await self.repo.commit()
 
-    async def update_task(self, user_id: int, task_id: int, new_task: UpdateTaskSchema):
-        await self.check_user_permission_by_task_id(task_id=task_id, user_id=user_id, roles=["owner"])
-        updated = await self.repo.update_task(task_id, new_task.model_dump(exclude_unset=True))
+    async def update_task(self, user_id: int, task_id: int, project_id, new_task: UpdateTaskSchema):
+        task = await self.get_task_check_user_permission_by_task_id(task_id=task_id, user_id=user_id, roles=["owner"])
+
+        if task.project_id != project_id:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        await self.repo.update_task(task=task, new_task=new_task.model_dump(exclude_unset=True))
         await self.repo.commit()
-        return updated
+        return task

@@ -43,7 +43,7 @@ class UserRepository:
             for i in roles:
                 if member.role == i:
                    return True
-        raise TypeError
+        return False
 
 
     async def commit(self):

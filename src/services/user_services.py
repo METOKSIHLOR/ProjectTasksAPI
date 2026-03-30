@@ -47,9 +47,7 @@ class UserServices:
         return projects
 
     async def check_user_role(self, user_id, project_id, roles: List[str]) -> bool:
-        try:
-            await self.repo.check_user_role(user_id, project_id, roles)  # проверяем соответствие роли пользователя
-        except TypeError:
+        if not await self.repo.check_user_role(user_id, project_id, roles):  # проверяем соответствие роли пользователя
             raise HTTPException(status_code=403, detail="Not authorized")
         return True
 

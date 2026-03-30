@@ -31,8 +31,6 @@ class ProjectRepository:
     async def get_project_by_id(self, project_id: int):
         stmt = select(Project).where(Project.id == project_id)
         project = await self.session.execute(stmt)
-        if not project:
-            raise ValueError("Project not found")
         return project.scalar_one_or_none()
 
     async def delete_project(self, project: Project):

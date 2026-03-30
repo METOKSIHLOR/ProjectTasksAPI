@@ -28,24 +28,29 @@ async def create_project_task(project_id: int,
 @router.get("")
 async def get_project_tasks(project_id: int,
                             session: AsyncSession = Depends(get_session),
-                            user_id = Depends(get_current_user)) -> List[TaskInfoSchema]:
+                            user_id: int = Depends(get_current_user)) -> List[TaskInfoSchema]:
     """Ручка возвращает все таски в этом проекте"""
     task_serv = TasksService(session)
     tasks = await task_serv.get_tasks_by_project_id(project_id=project_id, user_id=user_id)
     return tasks
 
 @router.delete("/{task_id}")
-async def delete_task(task_id: int, user_id: int = Depends(get_current_user), session = Depends(get_session)):
+async def delete_task(
+        project_id: int,
+        task_id: int,
+        user_id: int = Depends(get_current_user),
+        session = Depends(get_session)):
     service = TasksService(session)
-    await service.delete_task(task_id=task_id, user_id=user_id)
+    await service.delete_task(task_id=task_id, user_id=user_id, project_id=project_id)
     return {"success": True}
 
 @router.patch("/{task_id}")
-async def update_task(task_id: int,
+async def update_task(project_id: int,
+                      task_id: int,
                       new_task: UpdateTaskSchema,
                       user_id: int = Depends(get_current_user),
                       session = Depends(get_session)):
     service = TasksService(session)
-    await service.update_task(task_id=task_id, new_task=new_task, user_id=user_id)
+    await service.update_task(task_id=task_id, new_task=new_task, user_id=user_id, project_id=project_id)
     return {"success": True}
 

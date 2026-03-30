@@ -19,7 +19,7 @@ class ProjectServices:
     async def check_user_permission_by_project_id(self, project_id: int, user_id: int, roles: List[str]):
         project = await self.repo.get_project_by_id(project_id)
         user_serv = UserServices(self.repo.session)
-        await user_serv.check_user_role(user_id=user_id, project_id=project_id, roles=roles)
+        await user_serv.check_user_role(user_id=user_id, project_id=project.id, roles=roles)
 
         return project
 
@@ -29,9 +29,8 @@ class ProjectServices:
         return project
 
     async def get_project_by_id(self, project_id):
-        try:
-            project = await self.repo.get_project_by_id(project_id)
-        except ValueError:
+        project = await self.repo.get_project_by_id(project_id)
+        if project is None:
             raise HTTPException(status_code=404, detail="Project not found")
         return project
 

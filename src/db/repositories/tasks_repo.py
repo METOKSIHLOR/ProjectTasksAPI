@@ -16,7 +16,7 @@ class TasksRepository:
         stmt = select(Task).where(Task.project_id == project_id)
         tasks = await self.session.execute(stmt)
         await self.session.flush()
-        return tasks
+        return tasks.scalars().all()
 
     async def get_task_by_id(self, task_id: int):
         stmt = select(Task).where(Task.id == task_id)
@@ -28,12 +28,7 @@ class TasksRepository:
         await self.session.flush()
         return task
 
-    async def update_task(self, task_id: int, new_task: dict):
-        task = await self.get_task_by_id(task_id)
-
-        if not task:
-            raise ValueError("Task not found")
-
+    async def update_task(self, task: Task, new_task: dict):
         for key, value in new_task.items():
             if value:
                 setattr(task, key, value)
