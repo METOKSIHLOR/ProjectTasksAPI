@@ -61,7 +61,7 @@ class Task(Base):
     status: Mapped[AllowedTaskStatus] = mapped_column(default='todo', nullable=False)
     description: Mapped[str] = mapped_column(nullable=False)
     assignee_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now())
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
     project = relationship("Project", back_populates="tasks")
     comments = relationship("Comment",
@@ -83,6 +83,6 @@ class Comment(Base):
     task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False,)
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     text: Mapped[str] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now())
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
     task = relationship("Task", back_populates="comments")
