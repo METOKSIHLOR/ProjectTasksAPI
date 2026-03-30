@@ -29,7 +29,7 @@ class TasksRepository:
 
     async def update_task(self, task: Task, new_task: dict):
         for key, value in new_task.items():
-            if value:
+            if value is not "":
                 setattr(task, key, value)
 
         await self.session.flush()
