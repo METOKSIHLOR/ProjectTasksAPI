@@ -3,13 +3,15 @@ import { useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { commentsApi } from '../api/comments';
 import { projectsApi } from '../api/projects';
-import { tasksApi } from '../api/tasks';
+import { tasksApi, type CreateTaskPayload, type UpdateTaskPayload } from '../api/tasks';
 import { useAuth } from '../hooks/useAuth';
 import { queryClient } from '../utils/queryClient';
 import { queryKeys } from '../utils/queryKeys';
 import { extractErrorMessage } from '../utils/errors';
 import { Button, Card, ErrorBox, Input, Loader, Modal } from '../components/ui';
-import type { Task } from '../types/api';
+import type { Project, Task } from '../types/api';
+
+const TASK_STATUSES: Array<'todo' | 'in_progress' | 'done'> = ['todo', 'in_progress', 'done'];
 
 export const ProjectPage = () => {
   const { projectId } = useParams();
@@ -38,7 +40,7 @@ export const ProjectPage = () => {
   });
 
   const createTask = useMutation({
-    mutationFn: (payload: { name: string; description: string; status: string }) => tasksApi.create(pid, payload),
+    mutationFn: (payload: CreateTaskPayload) => tasksApi.create(pid, payload),
     onSuccess: async () => {
       setTaskModalOpen(false);
       await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(pid) });
@@ -46,8 +48,7 @@ export const ProjectPage = () => {
   });
 
   const updateTask = useMutation({
-    mutationFn: ({ id, ...payload }: { id: number; name: string; description: string; status: string }) =>
-      tasksApi.update(pid, id, payload),
+    mutationFn: ({ id, ...payload }: { id: number } & UpdateTaskPayload) => tasksApi.update(pid, id, payload),
     onSuccess: async () => {
       setEditingTask(null);
       await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(pid) });
@@ -61,10 +62,8 @@ export const ProjectPage = () => {
     }
   });
 
-  const memberIds = useMemo(() => {
-    const p = detail.data as unknown as { members?: Array<{ user_id: number }>; owner_id?: number; id: number; name: string };
-    return p?.members?.map((m) => m.user_id) ?? [];
-  }, [detail.data]);
+  const projectData = detail.data as Project | undefined;
+  const memberIds = useMemo(() => projectData?.members?.map((m) => m.user_id) ?? [], [projectData]);
 
   if (detail.isLoading || tasks.isLoading) return <Loader label="Loading project..." />;
 
@@ -77,6 +76,7 @@ export const ProjectPage = () => {
 
       <Card className="space-y-3">
         <h2 className="text-lg font-semibold">Members</h2>
+        <ErrorBox message={addMember.error ? extractErrorMessage(addMember.error) : undefined} />
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -113,15 +113,18 @@ export const ProjectPage = () => {
         </div>
 
         <ErrorBox message={tasks.error ? extractErrorMessage(tasks.error) : undefined} />
+        <ErrorBox message={createTask.error ? extractErrorMessage(createTask.error) : undefined} />
+        <ErrorBox message={updateTask.error ? extractErrorMessage(updateTask.error) : undefined} />
 
         <div className="space-y-3">
           {tasks.data?.map((task) => (
             <div key={task.id} className="rounded-lg border p-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-medium">{task.name}</h3>
+                  <h3 className="font-medium">{task.title}</h3>
                   <p className="text-sm text-slate-600">{task.description || 'No description'}</p>
                   <p className="mt-1 text-xs uppercase text-slate-400">{task.status || 'unknown'}</p>
+                  <p className="mt-1 text-xs text-slate-400">Assignee #{task.assignee_id}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button className="bg-amber-500 hover:bg-amber-600" onClick={() => setEditingTask(task)}>
@@ -142,24 +145,29 @@ export const ProjectPage = () => {
               </button>
             </div>
           ))}
+          {tasks.data?.length === 0 && <p className="text-sm text-slate-500">No tasks yet.</p>}
         </div>
       </Card>
 
       <TaskModal
         open={taskModalOpen}
         title="Create Task"
+        mode="create"
         onClose={() => setTaskModalOpen(false)}
-        onSubmit={(payload) => createTask.mutate(payload)}
+        onCreate={(payload) => createTask.mutate(payload)}
         loading={createTask.isPending}
+        memberIds={memberIds}
       />
 
       <TaskModal
         open={!!editingTask}
         title="Edit Task"
+        mode="edit"
         onClose={() => setEditingTask(null)}
-        onSubmit={(payload) => editingTask && updateTask.mutate({ id: editingTask.id, ...payload })}
+        onEdit={(payload) => editingTask && updateTask.mutate({ id: editingTask.id, ...payload })}
         loading={updateTask.isPending}
         initial={editingTask ?? undefined}
+        memberIds={memberIds}
       />
 
       <CommentsModal task={selectedTask} projectId={pid} onClose={() => setSelectedTask(null)} />
@@ -170,39 +178,89 @@ export const ProjectPage = () => {
 const TaskModal = ({
   open,
   title,
+  mode,
   onClose,
-  onSubmit,
   loading,
-  initial
+  memberIds,
+  initial,
+  onCreate,
+  onEdit
 }: {
   open: boolean;
   title: string;
+  mode: 'create' | 'edit';
   onClose: () => void;
-  onSubmit: (payload: { name: string; description: string; status: string }) => void;
   loading: boolean;
+  memberIds: number[];
   initial?: Task;
+  onCreate?: (payload: CreateTaskPayload) => void;
+  onEdit?: (payload: UpdateTaskPayload) => void;
 }) => {
-  const [name, setName] = useState('');
+  const [taskTitle, setTaskTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState('todo');
+  const [status, setStatus] = useState<'todo' | 'in_progress' | 'done'>('todo');
+  const [assigneeId, setAssigneeId] = useState('');
 
   useEffect(() => {
-    setName(initial?.name || '');
-    setDescription(initial?.description || '');
-    setStatus(initial?.status || 'todo');
-  }, [initial, open]);
+    if (mode === 'edit' && initial) {
+      setTaskTitle(initial.title);
+      setDescription(initial.description || '');
+      setStatus((TASK_STATUSES.includes(initial.status as 'todo' | 'in_progress' | 'done')
+        ? initial.status
+        : 'todo') as 'todo' | 'in_progress' | 'done');
+      setAssigneeId(String(initial.assignee_id ?? ''));
+      return;
+    }
+
+    setTaskTitle('');
+    setDescription('');
+    setStatus('todo');
+    setAssigneeId(memberIds[0] ? String(memberIds[0]) : '');
+  }, [initial, open, mode, memberIds]);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    onSubmit({ name, description, status });
+    if (mode === 'create') {
+      onCreate?.({ title: taskTitle, description, assignee_id: Number(assigneeId) });
+      return;
+    }
+
+    onEdit?.({ title: taskTitle, description, status });
   };
 
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <form className="space-y-3" onSubmit={submit}>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Task name" required />
-        <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
-        <Input value={status} onChange={(e) => setStatus(e.target.value)} placeholder="Status" required />
+        <Input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="Task title" required />
+        <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" required />
+
+        <label className="block text-sm text-slate-600">
+          Status
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as 'todo' | 'in_progress' | 'done')}
+            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          >
+            {TASK_STATUSES.map((s) => (
+              <option value={s} key={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {mode === 'create' && (
+          <label className="block text-sm text-slate-600">
+            Assignee ID
+            <Input
+              value={assigneeId}
+              onChange={(e) => setAssigneeId(e.target.value)}
+              placeholder={memberIds[0] ? `Например: ${memberIds[0]}` : 'Введите user id участника проекта'}
+              required
+            />
+          </label>
+        )}
+
         <Button type="submit" disabled={loading}>
           {loading ? 'Saving...' : 'Save'}
         </Button>
@@ -246,7 +304,7 @@ const CommentsModal = ({ task, projectId, onClose }: { task: Task | null; projec
   });
 
   return (
-    <Modal open={!!task} onClose={onClose} title={`Comments: ${task?.name || ''}`}>
+    <Modal open={!!task} onClose={onClose} title={`Comments: ${task?.title || ''}`}>
       <form
         className="mb-4 flex gap-2"
         onSubmit={(e) => {

@@ -4,17 +4,24 @@ export interface User {
   email: string;
 }
 
+export interface ProjectMember {
+  user_id: number;
+  role: 'owner' | 'member' | string;
+}
+
 export interface Project {
   id: number;
   name: string;
   owner_id?: number;
+  members?: ProjectMember[];
 }
 
 export interface Task {
   id: number;
-  name: string;
-  description?: string;
-  status?: string;
+  title: string;
+  description: string;
+  status: 'todo' | 'in_progress' | 'done' | string;
+  assignee_id: number;
   created_at?: string;
 }
 
@@ -28,4 +35,3 @@ export interface Comment {
 export interface ApiError {
   detail?: string;
 }
-
