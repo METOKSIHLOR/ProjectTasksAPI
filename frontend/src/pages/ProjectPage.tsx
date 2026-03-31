@@ -9,13 +9,14 @@ import { queryClient } from '../utils/queryClient';
 import { queryKeys } from '../utils/queryKeys';
 import { extractErrorMessage } from '../utils/errors';
 import { Button, Card, ErrorBox, Input, Loader, Modal } from '../components/ui';
-import type { Project, Task } from '../types/api';
+import type { Project, ProjectMember, Task } from '../types/api';
 
 const TASK_STATUSES: Array<'todo' | 'in_progress' | 'done'> = ['todo', 'in_progress', 'done'];
 
 export const ProjectPage = () => {
   const { projectId } = useParams();
   const pid = Number(projectId);
+  const me = useAuth();
   const [newMemberId, setNewMemberId] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -24,18 +25,44 @@ export const ProjectPage = () => {
   const detail = useQuery({ queryKey: queryKeys.project(pid), queryFn: () => projectsApi.detail(pid), enabled: !!pid });
   const tasks = useQuery({ queryKey: queryKeys.tasks(pid), queryFn: () => tasksApi.list(pid), enabled: !!pid });
 
+  const projectData = detail.data as Project | undefined;
+  const members = useMemo(() => projectData?.members ?? [], [projectData]);
+  const memberIds = useMemo(() => members.map((m) => m.user_id), [members]);
+
   const addMember = useMutation({
     mutationFn: (uid: number) => projectsApi.addMember(pid, uid),
-    onSuccess: async () => {
+    onSuccess: async (_, uid) => {
       setNewMemberId('');
+
+      queryClient.setQueryData<Project | undefined>(queryKeys.project(pid), (prev) => {
+        if (!prev) return prev;
+        const exists = prev.members?.some((m) => m.user_id === uid);
+        if (exists) return prev;
+
+        return {
+          ...prev,
+          members: [...(prev.members ?? []), { user_id: uid, role: 'member' }]
+        };
+      });
+
       await queryClient.invalidateQueries({ queryKey: queryKeys.project(pid) });
+      await detail.refetch();
     }
   });
 
   const removeMember = useMutation({
     mutationFn: (uid: number) => projectsApi.removeMember(pid, uid),
-    onSuccess: async () => {
+    onSuccess: async (_, uid) => {
+      queryClient.setQueryData<Project | undefined>(queryKeys.project(pid), (prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          members: (prev.members ?? []).filter((member) => member.user_id !== uid)
+        };
+      });
+
       await queryClient.invalidateQueries({ queryKey: queryKeys.project(pid) });
+      await detail.refetch();
     }
   });
 
@@ -62,9 +89,6 @@ export const ProjectPage = () => {
     }
   });
 
-  const projectData = detail.data as Project | undefined;
-  const memberIds = useMemo(() => projectData?.members?.map((m) => m.user_id) ?? [], [projectData]);
-
   if (detail.isLoading || tasks.isLoading) return <Loader label="Loading project..." />;
 
   return (
@@ -74,9 +98,15 @@ export const ProjectPage = () => {
         <p className="text-sm text-slate-500">Project ID: {pid}</p>
       </Card>
 
-      <Card className="space-y-3">
-        <h2 className="text-lg font-semibold">Members</h2>
+      <Card className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold">Members</h2>
+          <p className="mt-1 text-sm text-slate-500">Project members: {members.length}</p>
+        </div>
+
         <ErrorBox message={addMember.error ? extractErrorMessage(addMember.error) : undefined} />
+        <ErrorBox message={removeMember.error ? extractErrorMessage(removeMember.error) : undefined} />
+
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -85,25 +115,25 @@ export const ProjectPage = () => {
           }}
         >
           <Input value={newMemberId} onChange={(e) => setNewMemberId(e.target.value)} placeholder="User ID" required />
-          <Button type="submit">Add</Button>
+          <Button type="submit" disabled={addMember.isPending}>
+            {addMember.isPending ? 'Adding...' : 'Add'}
+          </Button>
         </form>
-        <div className="flex flex-wrap gap-2">
-          {memberIds.map((id) => (
-            <div key={id} className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm">
-              User #{id}
-              <button
-                type="button"
-                className="text-red-600"
-                onClick={() => {
-                  if (window.confirm(`Remove user #${id}?`)) removeMember.mutate(id);
-                }}
-              >
-                ✕
-              </button>
-            </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          {members.map((member) => (
+            <MemberCard
+              key={member.user_id}
+              member={member}
+              isCurrentUser={member.user_id === me.data?.id}
+              onRemove={() => {
+                if (window.confirm(`Remove user #${member.user_id}?`)) removeMember.mutate(member.user_id);
+              }}
+            />
           ))}
-          {memberIds.length === 0 && <p className="text-sm text-slate-500">No members listed.</p>}
         </div>
+
+        {members.length === 0 && <p className="text-sm text-slate-500">No members listed.</p>}
       </Card>
 
       <Card className="space-y-4">
@@ -171,6 +201,44 @@ export const ProjectPage = () => {
       />
 
       <CommentsModal task={selectedTask} projectId={pid} onClose={() => setSelectedTask(null)} />
+    </div>
+  );
+};
+
+const MemberCard = ({
+  member,
+  isCurrentUser,
+  onRemove
+}: {
+  member: ProjectMember;
+  isCurrentUser: boolean;
+  onRemove: () => void;
+}) => {
+  const first = `U${member.user_id}`.charAt(0).toUpperCase();
+  const roleText = member.role === 'owner' ? 'Owner' : 'Member';
+
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-sm font-semibold text-white">
+          {first}
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-slate-900">User #{member.user_id}</p>
+          <p className="text-xs text-slate-500">
+            {roleText}
+            {isCurrentUser ? ' · You' : ''}
+          </p>
+        </div>
+      </div>
+
+      {member.role !== 'owner' ? (
+        <button type="button" className="text-sm text-red-600 hover:underline" onClick={onRemove}>
+          Remove
+        </button>
+      ) : (
+        <span className="rounded-full bg-primary-100 px-2 py-1 text-xs text-primary-700">Owner</span>
+      )}
     </div>
   );
 };

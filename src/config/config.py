@@ -16,11 +16,18 @@ class Redis:
     port: int
     db: int
 
+@dataclass
+class CORS:
+    origins: list
+    methods: list
+    headers: list
+
 # валидация данных для итогового класса конфигурации
 @dataclass
 class Config:
     postgres: Postgres
     redis: Redis
+    cors: CORS 
 
 # подстановка всех чувствительных данных из .env
 def load_config(path: str | None = None):
@@ -35,7 +42,13 @@ def load_config(path: str | None = None):
                           ),
         redis=Redis(host=env("REDIS_HOST"),
                     port=env.int("REDIS_PORT"),
-                    db=env.int("REDIS_DB"),),
+                    db=env.int("REDIS_DB"),
+                    ),
+        cors=CORS(
+            origins=env.list("ALLOW_ORIGINS"),
+            methods=env.list("ALLOW_METHODS"),
+            headers=env.list("ALLOW_HEADERS")
+        )
     )
 
 # получаем обьект конфига, который и используем в других модулях при необходимости

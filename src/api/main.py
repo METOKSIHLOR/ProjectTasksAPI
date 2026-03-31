@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
+from src.config.config import config
 from src.db.session import connect_db, close_db
 from src.api.routers.users import router as users_router
 from src.api.routers.tasks import router as tasks_router
@@ -18,15 +20,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=config.cors.origins,
+    allow_credentials=True,
+    allow_methods=config.cors.methods,
+    allow_headers=config.cors.headers,
+)
+
 # добавляем роутеры
 app.include_router(users_router)
 app.include_router(projects_router)
 app.include_router(tasks_router)
 app.include_router(comments_router)
-
-app.mount("/static", StaticFiles(directory="src/frontend"), name="static")
-
-
-@app.get("/")
-async def frontend_index():
-    return FileResponse("src/frontend/index.html")

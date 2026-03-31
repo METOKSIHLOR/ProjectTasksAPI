@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProjectSchema(BaseModel):
-    name: str = Field(default="", min_length=5)
+    name: str = Field(default="", min_length=5, max_length=22)
 
 class ProjectDeleteSchema(BaseModel):
     id: int = Field(default=0, lt=2147483647)

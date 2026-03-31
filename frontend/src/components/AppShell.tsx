@@ -36,7 +36,7 @@ export const AppShell = () => {
               onClick={() => setProfileOpen((v) => !v)}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-sm font-bold text-white shadow-sm transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary-300"
               aria-label="Open profile info"
-              title="Профиль"
+              title="Profile"
             >
               {initials}
             </button>
@@ -47,7 +47,7 @@ export const AppShell = () => {
 
             {profileOpen && (
               <div className="absolute left-0 top-12 z-20 min-w-64 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Профиль</p>
+                <p className="text-xs uppercase tracking-wide text-slate-400">Profile</p>
                 <p className="mt-1 text-sm font-semibold text-slate-900">{me.data?.name ?? 'Неизвестный пользователь'}</p>
                 <p className="mt-1 break-all text-sm text-slate-600">{me.data?.email ?? 'Email недоступен'}</p>
                 <p className="mt-2 text-xs text-slate-400">ID: {me.data?.id ?? '—'}</p>
