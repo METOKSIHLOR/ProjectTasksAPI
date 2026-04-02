@@ -26,7 +26,11 @@ class CreateProjectSchema(ProjectSchema):
 
 class UpdateProjectSchema(ProjectSchema):
     """Схема для обновления названия проекта. Требуется только его название"""
-    pass
+    name: str = Field(title="Название проекта",
+                      description="Если обновлять поле не надо - оставить пустые кавычки",
+                      min_length=0,
+                      max_length=25,
+                      examples=[""])
 
 class ProjectMemberSchema(BaseModel):
     """Схема для валидации участников проекта. Нигде в ручках напрямую не используется, но требуется в качестве списка для ProjectInfoSchema"""

@@ -19,4 +19,7 @@ class CommentInfoSchema(CommentSchema):
 
 class CommentUpdateSchema(CommentSchema):
     """Схема для обновления текста комментария"""
-    pass
+    text: str = Field(title="Текст комментария",
+                      description="Если обновлять поле не надо - оставить пустые кавычки",
+                      lt=500,
+                      examples=[""])

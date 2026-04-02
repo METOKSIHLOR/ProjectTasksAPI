@@ -37,9 +37,20 @@ class TaskInfoSchema(TaskSchemaWithStatus):
                              gt=0,lt=2147483647)
 
 class UpdateTaskSchema(TaskSchema):
-    '''Схема для обновления данных в таске. Для поля которое обновлять не надо оставить пустые двойные кавычки ""'''
+    '''Схема для обновления данных в таске. Для полей которые обновлять не надо оставить пустые двойные кавычки ""'''
+    title: str = Field(title="Название таски", 
+                       description="Если обновлять поле не надо - оставить пустые кавычки", 
+                       min_length=0,
+                       max_length=25,
+                       examples=[""])
+    description: str = Field(title="Описание таски",
+                             description="Если обновлять поле не надо - оставить пустые кавычки", 
+                             min_length=0,
+                             max_length=200,
+                             examples=[""])
+    
     status: Literal[AllowedTaskStatus, ""] = Field(title="Статус задачи",
-                                                   description='Для поля которое не требуется обновлять оставьте ""',
+                                                   description='Если обновлять поле не надо - оставить пустые кавычки',
                                                    examples=["todo", "in_progress", "done"])
 
     
