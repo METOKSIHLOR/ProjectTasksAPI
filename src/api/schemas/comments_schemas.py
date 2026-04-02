@@ -4,7 +4,8 @@ class CommentSchema(BaseModel):
     text: str = Field(title="Текст комментария",
                       description="Должен быть больше 0 и меньше 500 символов",
                       gt=0,
-                      lt=500)
+                      lt=500,
+                      examples=["This task is very HAAAARD"])
 
 class CreateCommentSchema(CommentSchema):
     """Схема для создания комментария. Требуется только текст"""

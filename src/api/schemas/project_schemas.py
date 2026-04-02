@@ -7,7 +7,8 @@ class ProjectSchema(BaseModel):
     name: str = Field(title="Название проекта",
                       description="Название должно быть от 5 до 25 символов",
                       min_length=5,
-                      max_length=25)
+                      max_length=25,
+                      examples=["Microsoft API project"])
 
 class ProjectSchemaWithId(ProjectSchema):
     id: int = Field(title="Айди проекта",
@@ -31,7 +32,8 @@ class ProjectMemberSchema(BaseModel):
     """Схема для валидации участников проекта. Нигде в ручках напрямую не используется, но требуется в качестве списка для ProjectInfoSchema"""
     user_id: int = Field(default=0, lt=2147483647)
     role: AllowedRoles = Field(title="Роль пользователя",
-                               description="Принимаются только два значения - owner и member")
+                               description="Принимаются только два значения - owner и member",
+                               examples=["owner", "member"])
 
     model_config = ConfigDict(from_attributes=True)
 
