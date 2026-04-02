@@ -10,7 +10,7 @@ from src.services.tasks_services import TasksService
 
 router = APIRouter(prefix="/projects/{project_id}/tasks", tags=["tasks"])
 
-@router.post("")
+@router.post("", summary="Создать новую таску")
 async def create_task(project_id: int,
                               task: CreateTaskSchema,
                             session: AsyncSession = Depends(get_session),
@@ -20,7 +20,7 @@ async def create_task(project_id: int,
     task = await task_serv.create_task(project_id=project_id, user_id=user_id, task=task)
     return task
 
-@router.get("")
+@router.get("", summary="Получить все таски в проекте")
 async def get_all_tasks_in_project(project_id: int,
                             session: AsyncSession = Depends(get_session),
                             user_id: int = Depends(get_current_user)) -> List[TaskInfoSchema]:
@@ -29,7 +29,7 @@ async def get_all_tasks_in_project(project_id: int,
     tasks = await task_serv.get_tasks_by_project_id(project_id=project_id, user_id=user_id)
     return tasks
 
-@router.delete("/{task_id}")
+@router.delete("/{task_id}", summary="Удалить таску")
 async def delete_task(
         project_id: int,
         task_id: int,
@@ -40,7 +40,7 @@ async def delete_task(
     await service.delete_task(task_id=task_id, user_id=user_id, project_id=project_id)
     return {"success": True}
 
-@router.patch("/{task_id}")
+@router.patch("/{task_id}", summary="Обновить данные в таске")
 async def update_task(project_id: int,
                       task_id: int,
                       new_task: UpdateTaskSchema,

@@ -20,7 +20,7 @@ async def user_registration(user: UserRegistrationSchema, session: AsyncSession 
 
 @router.post("/auth/login", summary="Залогинить пользователя")
 async def user_login(user: UserCredsSchema, response: Response, session: AsyncSession = Depends(get_session)):
-    """Аутентификация пользователя через сесси и куки"""
+    """Аутентификация пользователя через сессии и куки"""
     service = UserServices(session)
     """проверка входных данных пользователя и добавление айди сессии в редис в случае успеха"""
     session_id = await service.auth(user)

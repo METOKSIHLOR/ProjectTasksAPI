@@ -18,7 +18,17 @@ async def lifespan(app: FastAPI):
 
     await close_db()
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan,
+              title="Tasks Management API",
+              description=
+              """API для работы с проектами, тасками и комментариями пользователей 
+              
+              ## Возможности
+              - Создание пользователя / проекта / задания / комментария
+              - Авторизация пользователя через сесии и Cookies
+              - Обновление данных в задачах, проектах и комментариях
+              """,
+              version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,

@@ -5,14 +5,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import get_current_user, get_session
-from src.api.schemas.project_schemas import ProjectSchema, ProjectInfoSchema, ProjectMemberIdSchema, ProjectDeleteSchema
+from src.api.schemas.project_schemas import CreateProjectSchema, UpdateProjectSchema, ProjectInfoSchema, ProjectMemberIdSchema, ProjectResponseSchema
 from src.services.project_services import ProjectServices
 from src.services.user_services import UserServices
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
-@router.post("", response_model=ProjectSchema, summary="Создать проект")
-async def create_project(project: ProjectSchema,
+@router.post("", response_model=ProjectResponseSchema, summary="Создать проект")
+async def create_project(project: CreateProjectSchema,
                          session: AsyncSession = Depends(get_session),
                          user_id: int = Depends(get_current_user)):
     """Создание нового проекта"""
@@ -20,7 +20,7 @@ async def create_project(project: ProjectSchema,
     project = await services.create_new_project(project, user_id)
     return project
 
-@router.delete("/{project_id}", response_model=ProjectDeleteSchema, summary="Удалить проект")
+@router.delete("/{project_id}", summary="Удалить проект")
 async def delete_project(project_id: int,
                          session: AsyncSession = Depends(get_session),
                          user_id: int = Depends(get_current_user)):
@@ -29,7 +29,7 @@ async def delete_project(project_id: int,
     await services.delete_project(project_id, user_id)
     return {"success": True}
 
-@router.get("", summary="Получить все проекты пользователя")
+@router.get("", summary="Получить все проекты пользователя", response_model=List[ProjectResponseSchema])
 async def get_all_user_projects(user_id = Depends(get_current_user), session = Depends(get_session)) -> List[ProjectInfoSchema]:
     """Получение всех проектов конкретного пользователя по его айди, полученному из куков"""
     service = UserServices(session)
@@ -51,7 +51,7 @@ async def get_project_details(project_id: int,
 
 @router.patch("/{project_id}", summary="Обновить имя проекта")
 async def update_project_name(project_id: int,
-                                 update: ProjectSchema,
+                                 update: UpdateProjectSchema,
                                  user_id = Depends(get_current_user),
                                  session = Depends(get_session),):
     """Обновление названия проекта, если юзер является его создателем"""
