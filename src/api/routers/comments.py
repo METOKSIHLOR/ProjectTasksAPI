@@ -8,7 +8,11 @@ from src.services.comments_services import CommentsServices
 
 router = APIRouter(tags=['comments'], prefix='/projects/{project_id}/tasks/{task_id}')
 
-@router.post("/comments", summary="Создать комментарий")
+@router.post("/comments", summary="Создать комментарий",
+            responses={
+                401: {"description": "Пользователь не залогинен"},
+                404: {"description": "Задача не найдена"}
+            })
 async def create_comment_in_task(project_id: int,
                          task_id: int,
                          comment: CreateCommentSchema,
@@ -19,7 +23,12 @@ async def create_comment_in_task(project_id: int,
     await comm_service.create_comment(project_id=project_id, task_id=task_id, author_id=user_id, text=comment.text)
     return {"success": True}
 
-@router.get("/comments", summary="Получить комментарии проекта")
+@router.get("/comments", summary="Получить комментарии проекта",
+            responses={
+                401: {"description": "Пользователь не залогинен"},
+                403: {"description": "Пользователь не является участником проекта"},
+                404: {"description": "Задача не была найдена"},
+            })
 async def get_all_comments_in_task(project_id: int,
                        task_id: int,
                        user_id: int = Depends(get_current_user),
@@ -29,7 +38,12 @@ async def get_all_comments_in_task(project_id: int,
     comments = await service.get_comments(project_id=project_id, task_id=task_id, user_id=user_id)
     return comments
 
-@router.patch("/comments/{comment_id}", summary="Обновить комментарий")
+@router.patch("/comments/{comment_id}", summary="Обновить комментарий",
+            responses={
+                401: {"description": "Пользователь не залогинен"},
+                403: {"description": "Пользователь не является автором комментария"},
+                404: {"description": "Комментарий не был найден | Задача не была найдена"},
+            })
 async def update_comment(project_id: int,
                           task_id: int,
                           comment_id: int,
@@ -41,7 +55,12 @@ async def update_comment(project_id: int,
     await service.update_comment(project_id=project_id, user_id=user_id, text=update.text, comment_id=comment_id, task_id=task_id)
     return {"success": True}
 
-@router.delete("/comments/{comment_id}", summary="Удалить комментарий из таски")
+@router.delete("/comments/{comment_id}", summary="Удалить комментарий из таски",
+            responses={
+                401: {"description": "Пользователь не залогинен"},
+                403: {"description": "Пользователь не является автором комментария"},
+                404: {"description": "Комментарий не был найден | Задача не была найдена"},
+            })
 async def delete_comment(project_id: int,
                           task_id: int,
                           comment_id: int,

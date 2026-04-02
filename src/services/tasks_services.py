@@ -41,8 +41,6 @@ class TasksService:
         await self.check_task_in_this_project(task_id=task_id, project_id=project_id)
         task = await self.repo.get_task_by_id(task_id)
         user_serv = UserServices(self.repo.session)
-        if task is None:
-            raise HTTPException(status_code=404, detail="Task not found")
 
         await user_serv.check_user_role(user_id=user_id, project_id=task.project_id, roles=roles)
 

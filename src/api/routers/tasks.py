@@ -10,7 +10,12 @@ from src.services.tasks_services import TasksService
 
 router = APIRouter(prefix="/projects/{project_id}/tasks", tags=["tasks"])
 
-@router.post("", summary="Создать новую таску")
+@router.post("", 
+             summary="Создать новую таску",
+             responses={
+                401: {"description": "Пользователь не залогинен"},
+                404: {"description": "Исполняющий задание не существует в данном проекте"}
+            })
 async def create_task(project_id: int,
                               task: CreateTaskSchema,
                             session: AsyncSession = Depends(get_session),
@@ -20,7 +25,13 @@ async def create_task(project_id: int,
     task = await task_serv.create_task(project_id=project_id, user_id=user_id, task=task)
     return task
 
-@router.get("", summary="Получить все таски в проекте")
+@router.get("", 
+            summary="Получить все таски в проекте",
+            responses={
+                401: {"description": "Пользователь не залогинен"},
+                403: {"description": "Пользователь не является участником проекта"},
+                404: {"description": "Проект не был найден"}
+            })
 async def get_all_tasks_in_project(project_id: int,
                             session: AsyncSession = Depends(get_session),
                             user_id: int = Depends(get_current_user)) -> List[TaskInfoSchema]:
@@ -29,7 +40,13 @@ async def get_all_tasks_in_project(project_id: int,
     tasks = await task_serv.get_tasks_by_project_id(project_id=project_id, user_id=user_id)
     return tasks
 
-@router.delete("/{task_id}", summary="Удалить таску")
+@router.delete("/{task_id}",
+               summary="Удалить таску",
+               responses={
+                    401: {"description": "Пользователь не залогинен"},
+                    403: {"description": "Пользователь не является создателем проекта"},
+                    404: {"description": "Задача не была найдена"}
+                })
 async def delete_task(
         project_id: int,
         task_id: int,
@@ -40,7 +57,12 @@ async def delete_task(
     await service.delete_task(task_id=task_id, user_id=user_id, project_id=project_id)
     return {"success": True}
 
-@router.patch("/{task_id}", summary="Обновить данные в таске")
+@router.patch("/{task_id}", summary="Обновить данные в таске",
+            responses={
+                401: {"description": "Пользователь не залогинен"},
+                403: {"description": "Пользователь не является владельцем проекта"},
+                404: {"description": "Задача не была найдена"}
+            })
 async def update_task(project_id: int,
                       task_id: int,
                       new_task: UpdateTaskSchema,

@@ -28,7 +28,7 @@ class CommentsServices:
         comment = await self.get_comment_belong_to_task(project_id=project_id, comment_id=comment_id, task_id=task_id)
 
         if comment.author_id != user_id:
-            raise HTTPException(status_code=404, detail="Comment doesn't belong to user")
+            raise HTTPException(status_code=403, detail="Comment doesn't belong to user")
 
         await self.repo.update_comment(comment=comment, text=text)
         await self.repo.commit()
@@ -39,7 +39,7 @@ class CommentsServices:
         comment = await self.get_comment_belong_to_task(project_id=project_id, comment_id=comment_id, task_id=task_id)
 
         if comment.author_id != user_id:
-            raise HTTPException(status_code=409, detail="Comment doesn't belong to user")
+            raise HTTPException(status_code=403, detail="Comment doesn't belong to user")
 
         await self.repo.delete_comment(comment)
 

@@ -1,3 +1,4 @@
+import stat
 from typing import List
 
 
@@ -7,6 +8,7 @@ from src.api.schemas.project_schemas import ProjectSchema
 from src.db.models import Project, ProjectMember
 from src.db.repositories.project_repo import ProjectRepository
 from src.services.user_services import UserServices
+from sqlalchemy.exc import IntegrityError
 
 
 class ProjectServices:
@@ -38,6 +40,9 @@ class ProjectServices:
     async def delete_project(self, project_id, user_id):
         await self.get_project_and_check_user_permission_by_project_id(project_id, user_id, ['owner'])
         project = await self.repo.get_project_by_id(project_id)
+        if project is None:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
         await self.repo.delete_project(project)
         await self.repo.commit()
         return project
@@ -49,9 +54,13 @@ class ProjectServices:
         return member
 
     async def add_member(self, project_id: int, user_id: int):
-        user_serv = UserServices(self.repo.session)
-        await user_serv.get_user_by_id(user_id=user_id)
-        member = await self.repo.add_member(ProjectMember(project_id=project_id, user_id=user_id))
+        project = await self.get_project_and_check_user_permission_by_project_id(project_id=project_id, user_id=user_id,
+                                                                      roles=["owner"])
+        try:
+            member = await self.repo.add_member(ProjectMember(project_id=project.id, user_id=user_id))
+        except IntegrityError: # если пользователь уже был добавлен в группу (дубликат в бд)
+            raise HTTPException(status_code=409, detail="User is already a member of this project")
+        
         await self.repo.commit()
         return member
 
