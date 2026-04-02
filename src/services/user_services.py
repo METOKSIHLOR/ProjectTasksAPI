@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 
 from src.api.authorization.hash import hash_password, verify_password
 from src.api.authorization.storage import storage
-from src.api.schemas.user_schemas import UserRegistrationSchema, UserLoginSchema
+from src.api.schemas.user_schemas import UserRegistrationSchema, UserCredsSchema
 from src.db.models import User
 from src.db.repositories.user_repo import UserRepository
 import uuid
@@ -27,7 +27,7 @@ class UserServices:
 
         return user
 
-    async def auth(self, schema: UserLoginSchema):
+    async def auth(self, schema: UserCredsSchema):
         user = await self.repo.get_user_by_email(schema.email)
 
         if user is None or not verify_password(schema.password, user.hash_password):
