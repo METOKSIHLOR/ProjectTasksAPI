@@ -3,8 +3,8 @@ from pydantic import BaseModel, Field
 class CommentSchema(BaseModel):
     text: str = Field(title="Текст комментария",
                       description="Должен быть больше 0 и меньше 500 символов",
-                      gt=0,
-                      lt=500,
+                      min_length=0,
+                      max_length=500,
                       examples=["This task is very HAAAARD"])
 
 class CreateCommentSchema(CommentSchema):
@@ -21,5 +21,5 @@ class CommentUpdateSchema(CommentSchema):
     """Схема для обновления текста комментария"""
     text: str = Field(title="Текст комментария",
                       description="Если обновлять поле не надо - оставить пустые кавычки",
-                      lt=500,
+                      max_length=500,
                       examples=[""])
