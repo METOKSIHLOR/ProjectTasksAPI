@@ -23,7 +23,7 @@ async def create_comment_in_task(project_id: int,
     await comm_service.create_comment(project_id=project_id, task_id=task_id, author_id=user_id, text=comment.text)
     return {"success": True}
 
-@router.get("/comments", summary="Получить комментарии проекта",
+@router.get("/comments", summary="Получить комментарии задачи",
             responses={
                 401: {"description": "Пользователь не залогинен"},
                 403: {"description": "Пользователь не является участником проекта"},
@@ -69,4 +69,4 @@ async def delete_comment(project_id: int,
     """Удаление комментария из таски, если пользователь является его автором"""
     service = CommentsServices(session)
     await service.delete_comment(project_id=project_id, comment_id=comment_id, user_id=user_id, task_id=task_id)
-    return {"Success": True}
+    return {"success": True}
