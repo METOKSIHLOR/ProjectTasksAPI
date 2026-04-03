@@ -62,7 +62,7 @@ async def get_project_details(project_id: int,
     service = ProjectServices(session)
 
     """Проверяем имеет ли пользователь доступ (Должен участвовать в проекте чтобы увидеть о нем информацию)"""
-    project = await service.get_project_and_check_user_permission_by_project_id(user_id, project_id,
+    project = await service.get_project_and_check_user_permission_by_project_id(project_id=project_id, user_id=user_id, roles=
                                                                                 ["member", "owner"])
 
     return project
@@ -97,7 +97,7 @@ async def add_project_member(project_id: int, member: ProjectMemberIdSchema,
     """Добавление в указанную группу нового участника, если пользователь является владельцем"""
     service = ProjectServices(session)
 
-    await service.add_member(user_id=member.user_id, project_id=project_id)
+    await service.add_member(member_id=member.user_id, user_id=user_id, project_id=project_id)
 
     return {"success": True}
 

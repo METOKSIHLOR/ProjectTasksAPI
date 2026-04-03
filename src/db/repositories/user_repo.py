@@ -43,6 +43,8 @@ class UserRepository:
             for i in roles:
                 if member.role == i:
                    return True
+        print(roles)
+        print(member.role)
         return False
 
 

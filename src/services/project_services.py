@@ -16,7 +16,7 @@ class ProjectServices:
         self.repo = ProjectRepository(session)
 
     async def get_project_and_check_user_permission_by_project_id(self, project_id: int, user_id: int, roles: List[str]):
-        project = await self.repo.get_project_by_id(project_id)
+        project = await self.repo.get_project_by_id(project_id=project_id)
 
         if project is None:
             raise HTTPException(status_code=404, detail="Project not found")
@@ -48,16 +48,16 @@ class ProjectServices:
         return project
 
     async def get_project_member_by_id(self, project_id, member_id):
-        member = await self.repo.get_project_member(project_id, member_id)
+        member = await self.repo.get_project_member(project_id=project_id, member_id=member_id)
         if member is None:
             raise HTTPException(status_code=404, detail="Member not found")
         return member
 
-    async def add_member(self, project_id: int, user_id: int):
+    async def add_member(self, member_id: int, project_id: int, user_id: int):
         project = await self.get_project_and_check_user_permission_by_project_id(project_id=project_id, user_id=user_id,
                                                                       roles=["owner"])
         try:
-            member = await self.repo.add_member(ProjectMember(project_id=project.id, user_id=user_id))
+            member = await self.repo.add_member(member=ProjectMember(project_id=project.id, user_id=member_id))
         except IntegrityError: # если пользователь уже был добавлен в группу (дубликат в бд)
             raise HTTPException(status_code=409, detail="User is already a member of this project")
         

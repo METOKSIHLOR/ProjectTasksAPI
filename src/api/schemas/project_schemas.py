@@ -49,7 +49,7 @@ class ProjectInfoSchema(ProjectSchemaWithId):
 
 class ProjectMemberIdSchema(BaseModel):
     user_id: int = Field(title="Айди участника проекта",
-                         default=0,
+                         gt=0,
                          lt=2147483647)
 
     model_config = ConfigDict(from_attributes=True)
