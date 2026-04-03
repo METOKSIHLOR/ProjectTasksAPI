@@ -51,6 +51,14 @@ class ProjectMember(Base):
         if role not in allowed:
             raise ValueError(f"Role must be one of {allowed}")
         return role
+    
+    @property
+    def name(self):
+        return self.user.name # для получения имени пользователя
+
+    @property
+    def email(self):
+        return self.user.email # для получения почты пользователя
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -60,7 +68,7 @@ class Task(Base):
     title: Mapped[str] = mapped_column(nullable=False)
     status: Mapped[AllowedTaskStatus] = mapped_column(default='todo', nullable=False)
     description: Mapped[str] = mapped_column(nullable=False)
-    assignee_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
+    assignee_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
     project = relationship("Project", back_populates="tasks")
@@ -68,6 +76,11 @@ class Task(Base):
                             back_populates="task",
                             cascade="all, delete-orphan",
                             passive_deletes=True)
+    assignee = relationship("User")
+
+    @property
+    def assignee_email(self):
+        return self.assignee.email
 
     @validates("status")
     def validate_status(self, key, status):
@@ -86,3 +99,4 @@ class Comment(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
     task = relationship("Task", back_populates="comments")
+    author = relationship("User")

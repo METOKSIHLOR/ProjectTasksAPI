@@ -1,5 +1,5 @@
 from sqlalchemy import select, and_
-
+from sqlalchemy.orm import selectinload
 from src.db.models import Comment
 
 
@@ -13,7 +13,7 @@ class CommentsRepository:
         return comment
 
     async def get_comments(self, task_id: int):
-        stmt = select(Comment).where(Comment.task_id == task_id)
+        stmt = select(Comment).where(Comment.task_id == task_id).options(selectinload(Comment.author))
         comments = await self.session.execute(stmt)
         return comments.scalars().all()
 

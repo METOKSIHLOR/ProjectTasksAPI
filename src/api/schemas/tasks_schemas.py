@@ -1,5 +1,5 @@
 from typing import Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 from src.db.models import AllowedTaskStatus
 
@@ -23,18 +23,16 @@ class TaskSchemaWithStatus(TaskSchema):
 
 class CreateTaskSchema(TaskSchema):
     """Схема для создания таски. Требуется айди существующего в группе участника, который выполняет задачу"""
-    assignee_id: int = Field(title="Айди исполнителя",
-                             description="Айди человека, который должен выполнить таску. 0 < id < 2147483647",
-                             gt=0,lt=2147483647)
+    assignee_email: EmailStr = Field(title="Почта исполнителя",
+                             description="Почта человека, который должен выполнить таску",)
 
 class TaskInfoSchema(TaskSchemaWithStatus):
     """Схема для получения информации о таске"""
-    id: int = Field(title="Айди пользователя",
+    id: int = Field(title="Айди таски",
                     gt=0,lt=2147483647)
 
-    assignee_id: int = Field(title="Айди исполнителя",
-                             description="Айди человека, который должен выполнить таску. 0 < id < 2147483647",
-                             gt=0,lt=2147483647)
+    assignee_email: EmailStr = Field(title="Почта исполнителя",
+                             description="Почта человека, который должен выполнить таску",)
 
 class UpdateTaskSchema(TaskSchema):
     '''Схема для обновления данных в таске. Для полей которые обновлять не надо оставить пустые двойные кавычки ""'''
@@ -52,6 +50,8 @@ class UpdateTaskSchema(TaskSchema):
     status: Literal[AllowedTaskStatus, ""] = Field(title="Статус задачи",
                                                    description='Если обновлять поле не надо - оставить пустые кавычки',
                                                    examples=["todo", "in_progress", "done"])
-
+    
+    assignee_email: EmailStr | Literal[""] = Field(title="Почта исполнителя",
+                             description="Если обновлять поле не надо - оставить пустые кавычки",)
     
 

@@ -61,7 +61,7 @@ async def delete_task(
             responses={
                 401: {"description": "Пользователь не залогинен"},
                 403: {"description": "Пользователь не является владельцем проекта"},
-                404: {"description": "Задача не была найдена"}
+                404: {"description": "Задача не была найдена | Пользователь не был найден"}
             })
 async def update_task(project_id: int,
                       task_id: int,

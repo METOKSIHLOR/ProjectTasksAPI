@@ -1,5 +1,6 @@
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.db.models import Project, ProjectMember
 
@@ -24,7 +25,8 @@ class ProjectRepository:
 
 
     async def get_project_by_id(self, project_id: int):
-        stmt = select(Project).where(Project.id == project_id)
+        stmt = select(Project).where(Project.id == project_id).options(
+        selectinload(Project.members).selectinload(ProjectMember.user))
         project = await self.session.execute(stmt)
         return project.scalar_one_or_none()
 

@@ -14,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 class ProjectServices:
     def __init__(self, session):
         self.repo = ProjectRepository(session)
+        self.user_serv = UserServices(session=session)
 
     async def get_project_and_check_user_permission_by_project_id(self, project_id: int, user_id: int, roles: List[str]):
         project = await self.repo.get_project_by_id(project_id=project_id)
@@ -21,8 +22,7 @@ class ProjectServices:
         if project is None:
             raise HTTPException(status_code=404, detail="Project not found")
 
-        user_serv = UserServices(self.repo.session)
-        await user_serv.check_user_role(user_id=user_id, project_id=project.id, roles=roles)
+        await self.user_serv.check_user_role(user_id=user_id, project_id=project.id, roles=roles)
 
         return project
 
@@ -52,30 +52,44 @@ class ProjectServices:
         if member is None:
             raise HTTPException(status_code=404, detail="Member not found")
         return member
+    
+    async def get_project_member_by_email(self, project_id, member_email):
+        member = await self.user_serv.get_user_by_email(member_email)
+        member = await self.repo.get_project_member(project_id=project_id, member_id=member.id)
 
-    async def add_member(self, member_id: int, project_id: int, user_id: int):
+        if member is None:
+            raise HTTPException(status_code=404, detail="Member not found")
+        
+        return member
+
+    async def add_member(self, member_email: str, project_id: int, user_id: int):
+
         project = await self.get_project_and_check_user_permission_by_project_id(project_id=project_id, user_id=user_id,
                                                                       roles=["owner"])
+        
+        member = await self.user_serv.get_user_by_email(email=member_email) # получаем айди юзера по его почте 
         try:
-            member = await self.repo.add_member(member=ProjectMember(project_id=project.id, user_id=member_id))
+            member = await self.repo.add_member(member=ProjectMember(project_id=project.id, user_id=member.id))
         except IntegrityError: # если пользователь уже был добавлен в группу (дубликат в бд)
             raise HTTPException(status_code=409, detail="User is already a member of this project")
         
         await self.repo.commit()
         return member
 
-    async def remove_member(self, project_id: int, member_id: int, user_id: int):
+    async def remove_member(self, project_id: int, member_email: str, user_id: int):
         await self.get_project_and_check_user_permission_by_project_id(project_id=project_id, user_id=user_id,
                                                                        roles=["owner"])
-        if member_id == user_id:
+        member = await self.user_serv.get_user_by_email(email=member_email) # Получаем обьект пользователя по его почте
+
+        if member.id == user_id:
             raise HTTPException(status_code=403, detail="Self delete does not allow")
 
-        member = await self.repo.get_project_member(project_id, member_id)
+        project_member = await self.repo.get_project_member(project_id=project_id, member_id=member.id) # проверяем является ли пользователь участником проекта
 
-        if member is None:
+        if project_member is None:
             raise HTTPException(status_code=404, detail="Member not found")
 
-        await self.repo.remove_member(member=member)
+        await self.repo.remove_member(member=project_member)
         await self.repo.commit()
         return member
 

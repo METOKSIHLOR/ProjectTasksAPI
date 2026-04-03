@@ -97,7 +97,7 @@ async def add_project_member(project_id: int, member: ProjectMemberIdSchema,
     """Добавление в указанную группу нового участника, если пользователь является владельцем"""
     service = ProjectServices(session)
 
-    await service.add_member(member_id=member.user_id, user_id=user_id, project_id=project_id)
+    await service.add_member(member_email=member.email, user_id=user_id, project_id=project_id)
 
     return {"success": True}
 
@@ -113,5 +113,5 @@ async def remove_project_member(project_id: int,
                                 user_id = Depends(get_current_user)):
     """Удаление участника из группы, если таковой в ней присутствует и пользователь является ее создателем"""
     service = ProjectServices(session)
-    await service.remove_member(project_id=project_id, member_id=member.user_id, user_id=user_id)
+    await service.remove_member(project_id=project_id, member_email=member.email, user_id=user_id)
     return {"success": True}

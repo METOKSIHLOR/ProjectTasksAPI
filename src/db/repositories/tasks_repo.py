@@ -1,5 +1,5 @@
 from sqlalchemy import select, and_
-
+from sqlalchemy.orm import selectinload
 from src.db.models import Task
 
 class TasksRepository:
@@ -9,6 +9,9 @@ class TasksRepository:
     async def create_task(self, task: Task):
         self.session.add(task)
         await self.session.flush()
+
+        await self.session.refresh(task, attribute_names=["assignee"])
+
         return task
 
     async def get_task_by_project(self, task_id, project_id):
@@ -17,12 +20,18 @@ class TasksRepository:
         return task.scalar_one_or_none()
 
     async def get_project_tasks(self, project_id: int):
-        stmt = select(Task).where(Task.project_id == project_id)
-        tasks = await self.session.execute(stmt)
-        return tasks.scalars().all()
+        stmt = (
+            select(Task)
+            .where(Task.project_id == project_id)
+            .options(selectinload(Task.assignee))
+        )
+
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
 
     async def get_task_by_id(self, task_id: int):
-        stmt = select(Task).where(Task.id == task_id)
+        stmt = select(Task).where(Task.id == task_id).options(
+    selectinload(Task.assignee))
         task = await self.session.execute(stmt)
         return task.scalar_one_or_none()
 

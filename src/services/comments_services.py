@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 
+from src.api.schemas.comments_schemas import CommentInfoSchema
 from src.db.models import Comment
 from src.db.repositories.comments_repo import CommentsRepository
 from src.services.tasks_services import TasksService
@@ -22,7 +23,11 @@ class CommentsServices:
         await self.tasks_service.get_task_check_user_permission_by_task_id(project_id=project_id, task_id=task_id, user_id=user_id,
                                                                            roles=["member", "owner"])
         comments = await self.repo.get_comments(task_id=task_id)
-        return comments
+
+        return [CommentInfoSchema(id=comment.id,
+        text=comment.text,
+        author_email=comment.author.email,
+        author_name=comment.author.name) for comment in comments]
 
     async def update_comment(self, project_id: int, comment_id: int, task_id: int, user_id: int, text: str):
         comment = await self.get_comment_belong_to_task(project_id=project_id, comment_id=comment_id, task_id=task_id)

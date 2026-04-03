@@ -40,10 +40,20 @@ class UserServices:
         return session_id
 
 
-    async def get_user_by_id(self, user_id):
-        user = await self.repo.get_user_by_id(user_id)
+    async def get_user_by_email(self, email: str):
+        user = await self.repo.get_user_by_email(email=email)
+
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
+        
+        return user
+
+    async def get_user_by_id(self, user_id: int):
+        user = await self.repo.get_user_by_id(user_id=user_id)
+
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        
         return user
 
     async def get_user_projects(self, user_id):
