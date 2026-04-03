@@ -24,7 +24,8 @@ class TaskSchemaWithStatus(TaskSchema):
 class CreateTaskSchema(TaskSchema):
     """Схема для создания таски. Требуется айди существующего в группе участника, который выполняет задачу"""
     assignee_email: EmailStr = Field(title="Почта исполнителя",
-                             description="Почта человека, который должен выполнить таску",)
+                             description="Почта человека, который должен выполнить таску",
+                             examples=["metoks@gmail.com"])
 
 class TaskInfoSchema(TaskSchemaWithStatus):
     """Схема для получения информации о таске"""
@@ -32,7 +33,8 @@ class TaskInfoSchema(TaskSchemaWithStatus):
                     gt=0,lt=2147483647)
 
     assignee_email: EmailStr = Field(title="Почта исполнителя",
-                             description="Почта человека, который должен выполнить таску",)
+                             description="Почта человека, который должен выполнить таску",
+                             examples=["metoks@gmail.com"])
 
 class UpdateTaskSchema(TaskSchema):
     '''Схема для обновления данных в таске. Для полей которые обновлять не надо оставить пустые двойные кавычки ""'''
@@ -52,6 +54,7 @@ class UpdateTaskSchema(TaskSchema):
                                                    examples=["todo", "in_progress", "done"])
     
     assignee_email: EmailStr | Literal[""] = Field(title="Почта исполнителя",
-                             description="Если обновлять поле не надо - оставить пустые кавычки",)
+                             description="Если обновлять поле не надо - оставить пустые кавычки",
+                             examples=["metoks@gmail.com"])
     
 

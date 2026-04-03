@@ -35,7 +35,8 @@ class UpdateProjectSchema(ProjectSchema):
 class ProjectMemberSchema(BaseModel):
     """Схема для валидации участников проекта. Нигде в ручках напрямую не используется, но требуется в качестве списка для ProjectInfoSchema"""
     name: str = Field(title="Имя пользователя")
-    email: EmailStr = Field(title="Почта пользователя")
+    email: EmailStr = Field(title="Почта пользователя",
+                            examples=["metoks@gmail.com"])
     role: AllowedRoles = Field(title="Роль пользователя",
                                description="Принимаются только два значения - owner и member",
                                examples=["owner", "member"])
