@@ -17,11 +17,11 @@ async def create_comment_in_task(project_id: int,
                          task_id: int,
                          comment: CreateCommentSchema,
                        user_id: int = Depends(get_current_user),
-                       session = Depends(get_session)):
+                       session = Depends(get_session)) -> CommentInfoSchema:
     """Создание комментария в таске, если указанная таска находится в указанном проекте"""
     comm_service = CommentsServices(session)
-    await comm_service.create_comment(project_id=project_id, task_id=task_id, author_id=user_id, text=comment.text)
-    return {"success": True}
+    comment = await comm_service.create_comment(project_id=project_id, task_id=task_id, author_id=user_id, text=comment.text)
+    return comment
 
 @router.get("/comments", summary="Получить комментарии задачи",
             responses={

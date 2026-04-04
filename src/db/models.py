@@ -100,3 +100,11 @@ class Comment(Base):
 
     task = relationship("Task", back_populates="comments")
     author = relationship("User")
+
+    @property
+    def author_name(self):
+        return self.author.name 
+    
+    @property
+    def author_email(self):
+        return self.author.email

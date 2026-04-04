@@ -40,6 +40,18 @@ async def get_all_tasks_in_project(project_id: int,
     tasks = await task_serv.get_tasks_by_project_id(project_id=project_id, user_id=user_id)
     return tasks
 
+@router.get("/{task_id}", summary="Получить одну конкретную таску")
+async def get_task(project_id: int,
+                   task_id: int,
+                   session: AsyncSession = Depends(get_session),
+                   user_id: int = Depends(get_current_user)) -> TaskInfoSchema:
+    task_serv = TasksService(session=session)
+    task = await task_serv.get_task_check_user_permission_by_task_id(project_id=project_id,
+                                                                      task_id=task_id,
+                                                                        user_id=user_id,
+                                                                          roles=["owner", "member"])
+    return task
+
 @router.delete("/{task_id}",
                summary="Удалить таску",
                responses={

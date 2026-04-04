@@ -15,7 +15,7 @@ class TasksRepository:
         return task
 
     async def get_task_by_project(self, task_id, project_id):
-        stmt = select(Task).where(and_(Task.project_id == project_id, Task.id == task_id))
+        stmt = select(Task).where(and_(Task.project_id == project_id, Task.id == task_id)).options(selectinload(Task.assignee))
         task = await self.session.execute(stmt)
         return task.scalar_one_or_none()
 
