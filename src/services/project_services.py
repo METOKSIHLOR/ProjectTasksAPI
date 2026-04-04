@@ -54,25 +54,42 @@ class ProjectServices:
         return member
     
     async def get_project_member_by_email(self, project_id, member_email):
-        member = await self.user_serv.get_user_by_email(member_email)
-        member = await self.repo.get_project_member(project_id=project_id, member_id=member.id)
+        member = self.find_project_member_by_email(project_id=project_id, member_email=member_email)
 
         if member is None:
             raise HTTPException(status_code=404, detail="Member not found")
         
         return member
+    
+    async def find_project_member_by_email(self, project_id, member_email):
+        user = await self.user_serv.get_user_by_email(member_email)
+        return await self.repo.get_project_member(
+            project_id=project_id,
+            member_id=user.id
+        )
 
     async def add_member(self, member_email: str, project_id: int, user_id: int):
 
         project = await self.get_project_and_check_user_permission_by_project_id(project_id=project_id, user_id=user_id,
                                                                       roles=["owner"])
         
-        member = await self.user_serv.get_user_by_email(email=member_email) # получаем айди юзера по его почте 
-        try:
-            member = await self.repo.add_member(member=ProjectMember(project_id=project.id, user_id=member.id))
-        except IntegrityError: # если пользователь уже был добавлен в группу (дубликат в бд)
-            raise HTTPException(status_code=409, detail="User is already a member of this project")
-        
+        user = await self.user_serv.get_user_by_email(member_email)
+
+        existing = await self.repo.get_project_member(
+            project_id=project.id,
+            member_id=user.id
+        )
+
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail="User is already a member of this project"
+            )
+
+        member = await self.repo.add_member(
+            ProjectMember(project_id=project.id, user_id=user.id)
+        )
+
         await self.repo.commit()
         return member
 
