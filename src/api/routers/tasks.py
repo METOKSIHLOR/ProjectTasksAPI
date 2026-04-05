@@ -80,7 +80,7 @@ async def update_task(project_id: int,
                       new_task: UpdateTaskSchema,
                       user_id: int = Depends(get_current_user),
                       session = Depends(get_session)):
-    """Обновление данных о таске, если юзер является создателем проекта. 
+    """Обновление данных о таске. Исполнитель может менять только статус задачи, владелец все поля. 
     Обновляются только данные в непустых столбцах"""
     service = TasksService(session)
     await service.update_task(task_id=task_id, new_task=new_task, user_id=user_id, project_id=project_id)

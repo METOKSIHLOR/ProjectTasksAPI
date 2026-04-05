@@ -66,7 +66,7 @@ async def delete_comment(project_id: int,
                           comment_id: int,
                           user_id: int = Depends(get_current_user),
                           session = Depends(get_session)):
-    """Удаление комментария из таски, если пользователь является его автором"""
+    """Удаление комментария из таски, если пользователь является его автором или владельцем проекта"""
     service = CommentsServices(session)
     await service.delete_comment(project_id=project_id, comment_id=comment_id, user_id=user_id, task_id=task_id)
     return {"success": True}

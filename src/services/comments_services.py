@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 
+from src.services.user_services import UserServices
 from src.api.schemas.comments_schemas import CommentInfoSchema
 from src.db.models import Comment
 from src.db.repositories.comments_repo import CommentsRepository
@@ -54,7 +55,7 @@ class CommentsServices:
 
         if comment.author_id != user_id:
             raise HTTPException(
-                status_code=403, detail="Comment doesn't belong to user"
+                status_code=403, detail="Not authorized"
             )
 
         await self.repo.update_comment(comment=comment, text=text)
@@ -64,14 +65,14 @@ class CommentsServices:
     async def delete_comment(
         self, project_id: int, comment_id: int, task_id: int, user_id: int
     ):
+        user_serv = UserServices(session=self.repo.session)
         comment = await self.get_comment_belong_to_task(
             project_id=project_id, comment_id=comment_id, task_id=task_id
         )
+        
 
-        if comment.author_id != user_id:
-            raise HTTPException(
-                status_code=403, detail="Comment doesn't belong to user"
-            )
+        if comment.author_id != user_id: # если пользователь не является автором комментария, проверяем является ли он владельцем проекта
+            user_serv.check_user_role(project_id=project_id, user_id=user_id, roles=["owner"])
 
         await self.repo.delete_comment(comment)
 
@@ -89,6 +90,6 @@ class CommentsServices:
         )
         if comment is None:
             raise HTTPException(
-                status_code=404, detail="In this task this comment does not exist"
+                status_code=404, detail="Comment not found"
             )
         return comment

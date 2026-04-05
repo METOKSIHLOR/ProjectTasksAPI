@@ -89,11 +89,23 @@ class TasksService:
     async def update_task(
         self, user_id: int, task_id: int, project_id, new_task: UpdateTaskSchema
     ):
-        task = await self.get_task_check_user_permission_by_task_id(
-            project_id=project_id, task_id=task_id, user_id=user_id, roles=["owner"]
-        )
+        #получаем таску, если она есть в этом проекте 
+        task = await self.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)
+
         dict_task = new_task.model_dump()
+        #проверяем какие поля меняются
+        changed_fields = {k: v for k, v in dict_task.items() if v != ""}
+
+        #проверяем меняется ли что-то кроме статуса, если да - проверяем юзера на владельца
+        if set(changed_fields.keys()) - {"status"}:
+            await self.user_serv.check_user_role(user_id=user_id, project_id=project_id, roles=["owner"])
+        else:
+            if task.assignee_id != user_id: # проверяем является ли юзер исполнителем задачи
+                # если нет - проверяем его на владельца
+                await self.user_serv.check_user_role(user_id=user_id, project_id=project_id, roles=["owner"])
+                
         if new_task.assignee_email != "":
+            # получаем исполнителя, если он есть в этом проекте
             assignee = await self.project.get_project_member_by_email(
                 project_id=project_id, member_email=new_task.assignee_email
             )
