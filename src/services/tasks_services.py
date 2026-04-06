@@ -71,20 +71,18 @@ class TasksService:
         #получаем таску, если она есть в этом проекте 
         task = await self.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)
 
-        dict_task = new_task.model_dump()
-        #проверяем какие поля меняются
-        changed_fields = {k: v for k, v in dict_task.items() if v != ""}
+        dict_task = new_task.model_dump(exclude_none=True, exclude_unset=True)
 
         is_assignee = task.assignee_id == user_id
-        is_only_status = set(changed_fields) <= {"status"}
+        is_only_status = set(dict_task) <= {"status"}
 
         if not (is_only_status and is_assignee):
             await self.user_serv.check_user_role(user_id=user_id, project_id=project_id, roles=["owner"])
                         
-        if new_task.assignee_email != "":
+        if "assignee_email" in dict_task:
             # получаем исполнителя, если он есть в этом проекте
             assignee = await self.project.find_project_member_by_email(
-                project_id=project_id, member_email=new_task.assignee_email
+                project_id=project_id, member_email=dict_task["assignee_email"]
             )
 
             if assignee is None:

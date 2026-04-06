@@ -31,7 +31,6 @@ class CheckUserPerms:
                        project_id: int = Path(...),
                        session = Depends(get_session)):
         repo = UserRepository(session=session)
-        print("depends")
         access = await repo.check_user_role(user_id=user_id, project_id=project_id, roles=self.roles)
         
         if not access:

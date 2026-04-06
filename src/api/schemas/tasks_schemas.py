@@ -1,5 +1,5 @@
 from typing import Literal
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator
 
 from src.db.models import AllowedTaskStatus
 
@@ -13,7 +13,7 @@ class TaskSchema(BaseModel):
                              description="Должно быть в пределах от 1 до 200 символов", 
                              min_length=1,
                              max_length=200,
-                             examples=["This API will be create tommorow"])
+                             examples=["This API should be create tommorow"])
 
 class TaskSchemaWithStatus(TaskSchema):
     status: AllowedTaskStatus = Field(default="todo",
@@ -37,24 +37,34 @@ class TaskInfoSchema(TaskSchemaWithStatus):
                              examples=["metoks@gmail.com"])
 
 class UpdateTaskSchema(TaskSchema):
-    '''Схема для обновления данных в таске. Для полей которые обновлять не надо оставить пустые двойные кавычки ""'''
-    title: str = Field(title="Название таски", 
+    '''Схема для обновления данных в таске. Для полей которые обновлять не надо оставить None'''
+    title: str | None = Field(None, title="Название таски", 
                        description="Если обновлять поле не надо - оставить пустые кавычки", 
-                       min_length=0,
-                       max_length=25,
-                       examples=[""])
-    description: str = Field(title="Описание таски",
-                             description="Если обновлять поле не надо - оставить пустые кавычки", 
-                             min_length=0,
-                             max_length=200,
-                             examples=[""])
+                       examples=["Create web API"])
+    description: str | None = Field(None, title="Описание таски",
+                             description="Если обновлять поле не надо - оставить None", 
+                             examples=["This API should be create tommorow"])
     
-    status: Literal[AllowedTaskStatus, ""] = Field(title="Статус задачи",
-                                                   description='Если обновлять поле не надо - оставить пустые кавычки',
+    status: AllowedTaskStatus | None = Field(None, title="Статус задачи",
+                                                   description='Если обновлять поле не надо - оставить None',
                                                    examples=["todo", "in_progress", "done"])
     
-    assignee_email: EmailStr | Literal[""] = Field(title="Почта исполнителя",
-                             description="Если обновлять поле не надо - оставить пустые кавычки",
+    assignee_email: EmailStr | None = Field(None, title="Почта исполнителя",
+                             description="Если обновлять поле не надо - оставить None",
                              examples=["metoks@gmail.com"])
+    
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value):
+        if value is not None and not (1 < len(value) <= 25):
+            raise ValueError("Длина названия должна быть от 1 до 25 символов")
+        return value
+    
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, value):
+        if value is not None and not (1 < len(value) <= 200):
+            raise ValueError("Длина описания должна быть от 1 до 200 символов")
+        return value
     
 

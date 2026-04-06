@@ -42,8 +42,7 @@ class TasksRepository:
 
     async def update_task(self, task: Task, new_task: dict):
         for key, value in new_task.items():
-            if value != "":
-                setattr(task, key, value)
+            setattr(task, key, value)
 
         await self.session.flush()
         return task
