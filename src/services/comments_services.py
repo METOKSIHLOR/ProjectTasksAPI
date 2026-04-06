@@ -66,7 +66,7 @@ class CommentsServices:
         
 
         if comment.author_id != user_id: # если пользователь не является автором комментария, проверяем является ли он владельцем проекта
-            user_serv.check_user_role(project_id=project_id, user_id=user_id, roles=["owner"])
+            await user_serv.check_user_role(project_id=project_id, user_id=user_id, roles=["owner"])
 
         await self.repo.delete_comment(comment)
 
