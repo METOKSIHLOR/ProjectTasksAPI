@@ -1,7 +1,6 @@
 from typing import List
 
 from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError
 
 from src.api.authorization.hash import hash_password, verify_password
 from src.api.authorization.storage import storage

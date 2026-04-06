@@ -1,5 +1,3 @@
-import stat
-from typing import List
 
 
 from fastapi import HTTPException
@@ -8,7 +6,6 @@ from src.api.schemas.project_schemas import ProjectSchema
 from src.db.models import Project, ProjectMember
 from src.db.repositories.project_repo import ProjectRepository
 from src.services.user_services import UserServices
-from sqlalchemy.exc import IntegrityError
 
 
 class ProjectServices:

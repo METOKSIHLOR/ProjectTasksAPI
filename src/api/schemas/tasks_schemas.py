@@ -1,5 +1,4 @@
-from typing import Literal
-from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from src.db.models import AllowedTaskStatus
 

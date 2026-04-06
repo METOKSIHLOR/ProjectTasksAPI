@@ -2,9 +2,9 @@ import os
 from collections.abc import AsyncGenerator
 
 import httpx
-import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from tests.helpers import login_user, register_user
 
 # Минимальный набор env-переменных, чтобы импортировать config/app в тестах.
 os.environ.setdefault("POSTGRES_USER", "test")
@@ -69,8 +69,6 @@ async def test_client(db_sessionmaker, monkeypatch) -> AsyncGenerator[httpx.Asyn
         yield client
 
     app.dependency_overrides.clear()
-
-from tests.helpers import login_user, register_user
 
 
 @pytest_asyncio.fixture

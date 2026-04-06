@@ -1,4 +1,3 @@
-from typing import List
 
 from fastapi import HTTPException
 
@@ -20,7 +19,10 @@ class TasksService:
         self.user_serv = UserServices(session=session)
 
     async def create_task(self, project_id: int, task: CreateTaskSchema):
+        # проверяем существует ли пользователь с такой почтой
         member = await self.user_serv.get_user_by_email(task.assignee_email)
+
+        # проверяем существует ли такой в проекте такой пользователь
         assignee = await self.project.get_project_member_by_id(
             project_id=project_id, member_id=member.id
         )

@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from fastapi import Response
 from fastapi.params import Depends, Cookie
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.authorization.storage import storage
