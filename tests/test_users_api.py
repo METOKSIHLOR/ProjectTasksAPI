@@ -93,3 +93,17 @@ async def test_logout_invalidates_session_and_future_me_is_401(test_client):
     assert logout_response.json() == {"success": True}
     assert me_response.status_code == 401
     assert me_response.json()["detail"] == "Not authenticated"
+    
+@pytest.mark.asyncio
+async def test_get_me_with_invalid_session_cookie_returns_401(test_client):
+    test_client.cookies.set("session_id", "definitely-invalid-session")
+    response = await test_client.get("/users/me")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid session"
+
+
+@pytest.mark.asyncio
+async def test_login_with_unknown_email_returns_401(test_client):
+    response = await login_user(test_client, "ghost@example.com")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Incorrect email or password"

@@ -109,3 +109,41 @@ async def test_delete_project_happy_path(owner_client, owner_project_id):
     assert delete_response.status_code == 200
     assert delete_response.json() == {"success": True}
     assert read_response.status_code == 403
+
+@pytest.mark.asyncio
+async def test_member_cannot_delete_project(test_client):
+    await register_user(test_client, "Owner", "owner_del_forbidden@example.com")
+    await login_user(test_client, "owner_del_forbidden@example.com")
+    project_id = (await test_client.post("/projects", json={"name": "Delete Protected"})).json()["id"]
+    await register_user(test_client, "Member", "member_del_forbidden@example.com")
+    await test_client.post(
+        f"/projects/{project_id}/members", json={"email": "member_del_forbidden@example.com"}
+    )
+    await test_client.post("/users/auth/logout")
+    await login_user(test_client, "member_del_forbidden@example.com")
+
+    response = await test_client.delete(f"/projects/{project_id}")
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_owner_cannot_add_unknown_member_returns_404(owner_client, owner_project_id):
+    response = await owner_client.post(
+        f"/projects/{owner_project_id}/members", json={"email": "unknown_member@example.com"}
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_remove_member_not_in_project_returns_404(test_client):
+    await register_user(test_client, "Owner", "owner_remove404@example.com")
+    await login_user(test_client, "owner_remove404@example.com")
+    project_id = (await test_client.post("/projects", json={"name": "Remove 404"})).json()["id"]
+    await register_user(test_client, "Lonely", "lonely_remove404@example.com")
+
+    response = await test_client.request(
+        "DELETE",
+        f"/projects/{project_id}/members",
+        json={"email": "lonely_remove404@example.com"},
+    )
+    assert response.status_code == 404

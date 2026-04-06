@@ -120,3 +120,79 @@ async def test_delete_comment_not_found_returns_404(owner_client, owner_project_
     )
 
     assert response.status_code == 404
+
+@pytest.mark.asyncio
+async def test_non_author_and_non_owner_cannot_delete_comment(test_client):
+    await register_user(test_client, "Owner", "owner_comment_acl@example.com")
+    await login_user(test_client, "owner_comment_acl@example.com")
+    project_id = (await test_client.post("/projects", json={"name": "Comments ACL"})).json()["id"]
+    task_id = (
+        await test_client.post(
+            f"/projects/{project_id}/tasks",
+            json={
+                "title": "Task",
+                "description": "Desc",
+                "assignee_email": "owner_comment_acl@example.com",
+            },
+        )
+    ).json()["id"]
+    comment_id = (
+        await test_client.post(
+            f"/projects/{project_id}/tasks/{task_id}/comments",
+            json={"text": "Owner comment"},
+        )
+    ).json()["id"]
+    await register_user(test_client, "Member", "member_comment_acl@example.com")
+    await test_client.post(
+        f"/projects/{project_id}/members", json={"email": "member_comment_acl@example.com"}
+    )
+    await test_client.post("/users/auth/logout")
+    await login_user(test_client, "member_comment_acl@example.com")
+
+    response = await test_client.delete(
+        f"/projects/{project_id}/tasks/{task_id}/comments/{comment_id}"
+    )
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_comment_owner_can_delete_others_comment(test_client):
+    await register_user(test_client, "Owner", "owner_comment_owner@example.com")
+    await login_user(test_client, "owner_comment_owner@example.com")
+    project_id = (await test_client.post("/projects", json={"name": "Owner deletes"})).json()["id"]
+    await register_user(test_client, "Member", "member_comment_owner@example.com")
+    await test_client.post(
+        f"/projects/{project_id}/members", json={"email": "member_comment_owner@example.com"}
+    )
+    task_id = (
+        await test_client.post(
+            f"/projects/{project_id}/tasks",
+            json={
+                "title": "Task",
+                "description": "Desc",
+                "assignee_email": "member_comment_owner@example.com",
+            },
+        )
+    ).json()["id"]
+    await test_client.post("/users/auth/logout")
+    await login_user(test_client, "member_comment_owner@example.com")
+    comment_id = (
+        await test_client.post(
+            f"/projects/{project_id}/tasks/{task_id}/comments",
+            json={"text": "Member comment"},
+        )
+    ).json()["id"]
+    await test_client.post("/users/auth/logout")
+    await login_user(test_client, "owner_comment_owner@example.com")
+
+    response = await test_client.delete(
+        f"/projects/{project_id}/tasks/{task_id}/comments/{comment_id}"
+    )
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_comment_endpoints_require_authentication(owner_project_id, owner_task_id, test_client):
+    await test_client.post("/users/auth/logout")
+    response = await test_client.get(f"/projects/{owner_project_id}/tasks/{owner_task_id}/comments")
+    assert response.status_code == 401
