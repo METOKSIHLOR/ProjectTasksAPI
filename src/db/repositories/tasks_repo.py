@@ -23,7 +23,7 @@ class TasksRepository:
         stmt = (
             select(Task)
             .where(Task.project_id == project_id)
-            .options(selectinload(Task.assignee))
+            .options(selectinload(Task.assignee)).order_by(Task.created_at)
         )
 
         result = await self.session.execute(stmt)

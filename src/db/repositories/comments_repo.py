@@ -13,7 +13,7 @@ class CommentsRepository:
         return comment
 
     async def get_comments(self, task_id: int):
-        stmt = select(Comment).where(Comment.task_id == task_id).options(selectinload(Comment.author))
+        stmt = select(Comment).where(Comment.task_id == task_id).options(selectinload(Comment.author)).order_by(Comment.created_at)
         comments = await self.session.execute(stmt)
         return comments.scalars().all()
 

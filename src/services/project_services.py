@@ -54,7 +54,7 @@ class ProjectServices:
         return member
     
     async def get_project_member_by_email(self, project_id, member_email):
-        member = self.find_project_member_by_email(project_id=project_id, member_email=member_email)
+        member = await self.find_project_member_by_email(project_id=project_id, member_email=member_email)
 
         if member is None:
             raise HTTPException(status_code=404, detail="Member not found")

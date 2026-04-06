@@ -18,10 +18,12 @@ class UserServices:
         hash_pw = hash_password(schema.password)
         model = User(name=schema.name, email=schema.email, hash_password=hash_pw)
 
-        try:
-            user = await self.repo.create_user(model)
-        except IntegrityError:  # если почта уже занята
-            raise HTTPException(status_code=409, detail="This email already exists")
+        email_exast = await self.repo.get_user_by_email(email=schema.email)
+
+        if email_exast is not None:
+             raise HTTPException(status_code=409, detail="This email already exists")
+        
+        user = await self.repo.create_user(model)
 
         await self.repo.commit()
 
