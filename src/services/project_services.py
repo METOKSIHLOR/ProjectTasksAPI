@@ -16,16 +16,6 @@ class ProjectServices:
         self.repo = ProjectRepository(session)
         self.user_serv = UserServices(session=session)
 
-    async def get_project_and_check_user_permission_by_project_id(self, project_id: int, user_id: int, roles: List[str]):
-        project = await self.repo.get_project_by_id(project_id=project_id)
-
-        if project is None:
-            raise HTTPException(status_code=404, detail="Project not found")
-
-        await self.user_serv.check_user_role(user_id=user_id, project_id=project.id, roles=roles)
-
-        return project
-
     async def create_new_project(self, project: ProjectSchema, user_id: int):
         project = await self.repo.create_project(Project(name=project.name, owner_id=user_id))
         await self.repo.commit()
@@ -37,9 +27,9 @@ class ProjectServices:
             raise HTTPException(status_code=404, detail="Project not found")
         return project
 
-    async def delete_project(self, project_id, user_id):
-        await self.get_project_and_check_user_permission_by_project_id(project_id, user_id, ['owner'])
+    async def delete_project(self, project_id):
         project = await self.repo.get_project_by_id(project_id)
+
         if project is None:
             raise HTTPException(status_code=404, detail="Project not found")
         
@@ -53,14 +43,6 @@ class ProjectServices:
             raise HTTPException(status_code=404, detail="Member not found")
         return member
     
-    async def get_project_member_by_email(self, project_id, member_email):
-        member = await self.find_project_member_by_email(project_id=project_id, member_email=member_email)
-
-        if member is None:
-            raise HTTPException(status_code=404, detail="Member not found")
-        
-        return member
-    
     async def find_project_member_by_email(self, project_id, member_email):
         user = await self.user_serv.get_user_by_email(member_email)
         return await self.repo.get_project_member(
@@ -68,16 +50,14 @@ class ProjectServices:
             member_id=user.id
         )
 
-    async def add_member(self, member_email: str, project_id: int, user_id: int):
-
-        project = await self.get_project_and_check_user_permission_by_project_id(project_id=project_id, user_id=user_id,
-                                                                      roles=["owner"])
+    async def add_member(self, member_email: str, project_id: int):
+        project = await self.get_project_by_id(project_id=project_id)
         
-        user = await self.user_serv.get_user_by_email(member_email)
+        member = await self.user_serv.get_user_by_email(member_email)
 
         existing = await self.repo.get_project_member(
             project_id=project.id,
-            member_id=user.id
+            member_id=member.id
         )
 
         if existing:
@@ -87,15 +67,13 @@ class ProjectServices:
             )
 
         member = await self.repo.add_member(
-            ProjectMember(project_id=project.id, user_id=user.id)
+            ProjectMember(project_id=project.id, user_id=member.id)
         )
 
         await self.repo.commit()
         return member
 
     async def remove_member(self, project_id: int, member_email: str, user_id: int):
-        await self.get_project_and_check_user_permission_by_project_id(project_id=project_id, user_id=user_id,
-                                                                       roles=["owner"])
         member = await self.user_serv.get_user_by_email(email=member_email) # Получаем обьект пользователя по его почте
 
         if member.id == user_id:
@@ -110,9 +88,8 @@ class ProjectServices:
         await self.repo.commit()
         return member
 
-    async def update_project_name(self, user_id: int, project_id: int, name: str):
-        project = await self.get_project_and_check_user_permission_by_project_id(project_id=project_id, user_id=user_id,
-                                                                                 roles=["owner"])
+    async def update_project_name(self, project_id: int, name: str):
+        project = await self.get_project_by_id(project_id=project_id)
         project = await self.repo.update_project_name(project=project, name=name)
         await self.repo.commit()
         return project

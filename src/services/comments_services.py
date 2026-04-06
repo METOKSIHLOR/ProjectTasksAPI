@@ -15,27 +15,21 @@ class CommentsServices:
     async def create_comment(
         self, project_id: int, task_id: int, author_id: int, text: str
     ):
-        await self.tasks_service.get_task_check_user_permission_by_task_id(
-            project_id=project_id,
-            task_id=task_id,
-            user_id=author_id,
-            roles=["member", "owner"],
-        )
+        await self.tasks_service.get_and_check_task_in_this_project(project_id=project_id, task_id=task_id)
         comment = Comment(task_id=task_id, author_id=author_id, text=text)
         await self.repo.create_comment(comment)
         await self.repo.commit()
         await self.repo.session.refresh(comment, attribute_names=["author"])
         return comment
 
-    async def get_comments(self, project_id: int, task_id: int, user_id: int):
-        await self.tasks_service.get_task_check_user_permission_by_task_id(
-            project_id=project_id,
-            task_id=task_id,
-            user_id=user_id,
-            roles=["member", "owner"],
-        )
+    async def get_comments(self, project_id: int, task_id: int):
+        #проверяем есть ли такая таска в проекте вообще
+        await self.tasks_service.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)
+
+        #возвращаем список комментов
         comments = await self.repo.get_comments(task_id=task_id)
 
+        #маппим модели и получаем дополнительные поля
         return [
             CommentInfoSchema(
                 id=comment.id,

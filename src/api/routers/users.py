@@ -66,7 +66,7 @@ async def user_logout(response: Response, session_id=Cookie(None)):
     """Разлогин пользователя и удаление его сессии из хранилища и куков"""
 
     if session_id is None:
-        raise HTTPException(status_code=401, detail="Not authorized")
+        raise HTTPException(status_code=403, detail="Not authorized")
 
     response.delete_cookie(key="session_id")  # удаляем из куков сессию
 

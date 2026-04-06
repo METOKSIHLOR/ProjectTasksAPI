@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends
 
-from src.api.dependencies import get_current_user, get_session
+from src.api.dependencies import CheckUserPerms, get_current_user, get_session
 from src.api.schemas.comments_schemas import CommentInfoSchema, CommentUpdateSchema, CreateCommentSchema
 from src.services.comments_services import CommentsServices
 
@@ -16,8 +16,8 @@ router = APIRouter(tags=['comments'], prefix='/projects/{project_id}/tasks/{task
 async def create_comment_in_task(project_id: int,
                          task_id: int,
                          comment: CreateCommentSchema,
-                       user_id: int = Depends(get_current_user),
-                       session = Depends(get_session)) -> CommentInfoSchema:
+                         user_id: int = Depends(get_current_user),
+                         session = Depends(get_session)) -> CommentInfoSchema:
     """Создание комментария в таске, если указанная таска находится в указанном проекте"""
     comm_service = CommentsServices(session)
     comment = await comm_service.create_comment(project_id=project_id, task_id=task_id, author_id=user_id, text=comment.text)
@@ -31,11 +31,11 @@ async def create_comment_in_task(project_id: int,
             })
 async def get_all_comments_in_task(project_id: int,
                        task_id: int,
-                       user_id: int = Depends(get_current_user),
-                       session = Depends(get_session)) -> List[CommentInfoSchema]:
+                       session = Depends(get_session),
+                       _: None = Depends(CheckUserPerms(["member", "owner"]))) -> List[CommentInfoSchema]:
     """Получение всех комментариев конкретной таски, если таска находится в указанном проекте"""
     service = CommentsServices(session)
-    comments = await service.get_comments(project_id=project_id, task_id=task_id, user_id=user_id)
+    comments = await service.get_comments(project_id=project_id, task_id=task_id)
     return comments
 
 @router.patch("/comments/{comment_id}", summary="Обновить комментарий",

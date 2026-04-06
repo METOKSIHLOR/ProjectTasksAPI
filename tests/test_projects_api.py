@@ -108,4 +108,4 @@ async def test_delete_project_happy_path(owner_client, owner_project_id):
 
     assert delete_response.status_code == 200
     assert delete_response.json() == {"success": True}
-    assert read_response.status_code == 404
+    assert read_response.status_code == 403

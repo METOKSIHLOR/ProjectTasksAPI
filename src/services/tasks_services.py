@@ -19,10 +19,7 @@ class TasksService:
         self.project = ProjectServices(session)
         self.user_serv = UserServices(session=session)
 
-    async def create_task(self, project_id: int, user_id: int, task: CreateTaskSchema):
-        await self.project.get_project_and_check_user_permission_by_project_id(
-            project_id=project_id, user_id=user_id, roles=["owner"]
-        )
+    async def create_task(self, project_id: int, task: CreateTaskSchema):
         member = await self.user_serv.get_user_by_email(task.assignee_email)
         assignee = await self.project.get_project_member_by_id(
             project_id=project_id, member_id=member.id
@@ -53,36 +50,18 @@ class TasksService:
         task = await self.repo.get_task_by_project(
             project_id=project_id, task_id=task_id
         )
+
         if task is None:
             raise HTTPException(status_code=404, detail="Task not found")
         
         return task
 
-    async def get_task_check_user_permission_by_task_id(
-        self, project_id: int, task_id: int, user_id: int, roles: List[str]
-    ):
-        task = await self.get_and_check_task_in_this_project(
-            task_id=task_id, project_id=project_id
-        )
-         
-
-        await self.user_serv.check_user_role(
-            user_id=user_id, project_id=task.project_id, roles=roles
-        )
-
-        return task
-
-    async def get_tasks_by_project_id(self, project_id: int, user_id: int):
-        await self.project.get_project_and_check_user_permission_by_project_id(
-            project_id=project_id, user_id=user_id, roles=["member", "owner"]
-        )
+    async def get_tasks_by_project_id(self, project_id: int):
         tasks = await self.repo.get_project_tasks(project_id)
         return tasks
 
-    async def delete_task(self, user_id: int, task_id: int, project_id: int):
-        task = await self.get_task_check_user_permission_by_task_id(
-            project_id=project_id, task_id=task_id, user_id=user_id, roles=["owner"]
-        )
+    async def delete_task(self, task_id: int, project_id: int):
+        task = await self.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)
         await self.repo.delete_task(task)
         await self.repo.commit()
 
@@ -96,19 +75,21 @@ class TasksService:
         #проверяем какие поля меняются
         changed_fields = {k: v for k, v in dict_task.items() if v != ""}
 
-        #проверяем меняется ли что-то кроме статуса, если да - проверяем юзера на владельца
-        if set(changed_fields.keys()) - {"status"}:
+        is_assignee = task.assignee_id == user_id
+        is_only_status = set(changed_fields) <= {"status"}
+
+        if not (is_only_status and is_assignee):
             await self.user_serv.check_user_role(user_id=user_id, project_id=project_id, roles=["owner"])
-        else:
-            if task.assignee_id != user_id: # проверяем является ли юзер исполнителем задачи
-                # если нет - проверяем его на владельца
-                await self.user_serv.check_user_role(user_id=user_id, project_id=project_id, roles=["owner"])
-                
+                        
         if new_task.assignee_email != "":
             # получаем исполнителя, если он есть в этом проекте
-            assignee = await self.project.get_project_member_by_email(
+            assignee = await self.project.find_project_member_by_email(
                 project_id=project_id, member_email=new_task.assignee_email
             )
+
+            if assignee is None:
+                raise HTTPException(status_code=404, detail="Member not found")
+
             dict_task["assignee_id"] = assignee.user_id
             del dict_task["assignee_email"]
 

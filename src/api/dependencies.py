@@ -1,4 +1,6 @@
-from fastapi import Cookie, HTTPException
+
+from fastapi import Cookie, Depends, HTTPException, Path
+from src.db.repositories.user_repo import UserRepository
 import src.db.session as sess
 from src.api.authorization.storage import storage
 
@@ -19,4 +21,19 @@ async def get_current_user(session_id = Cookie(None)):
         raise HTTPException(status_code=401, detail="Invalid session")
 
     return int(user_id)
+
+class CheckUserPerms:
+    def __init__(self, roles: list):
+        self.roles = roles
+
+    async def __call__(self,
+                       user_id = Depends(get_current_user),
+                       project_id: int = Path(...),
+                       session = Depends(get_session)):
+        repo = UserRepository(session=session)
+        print("depends")
+        access = await repo.check_user_role(user_id=user_id, project_id=project_id, roles=self.roles)
+        
+        if not access:
+            raise HTTPException(status_code=403, detail="Not authorized")
 

@@ -74,10 +74,10 @@ async def test_get_me_happy_path(test_client):
 
 
 @pytest.mark.asyncio
-async def test_logout_without_cookie_returns_401(test_client):
+async def test_logout_without_cookie_returns_403(test_client):
     response = await test_client.post("/users/auth/logout")
 
-    assert response.status_code == 401
+    assert response.status_code == 403
     assert response.json()["detail"] == "Not authorized"
 
 
