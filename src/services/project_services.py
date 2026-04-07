@@ -1,4 +1,4 @@
-
+from uuid import UUID
 
 from fastapi import HTTPException
 
@@ -13,18 +13,18 @@ class ProjectServices:
         self.repo = ProjectRepository(session)
         self.user_serv = UserServices(session=session)
 
-    async def create_new_project(self, project: ProjectSchema, user_id: int):
+    async def create_new_project(self, project: ProjectSchema, user_id: UUID):
         project = await self.repo.create_project(Project(name=project.name, owner_id=user_id))
         await self.repo.commit()
         return project
 
-    async def get_project_by_id(self, project_id):
+    async def get_project_by_id(self, project_id: UUID):
         project = await self.repo.get_project_by_id(project_id)
         if project is None:
             raise HTTPException(status_code=404, detail="Project not found")
         return project
 
-    async def delete_project(self, project_id):
+    async def delete_project(self, project_id: UUID):
         project = await self.repo.get_project_by_id(project_id)
 
         if project is None:
@@ -34,20 +34,20 @@ class ProjectServices:
         await self.repo.commit()
         return project
 
-    async def get_project_member_by_id(self, project_id, member_id):
+    async def get_project_member_by_id(self, project_id: UUID, member_id: UUID):
         member = await self.repo.get_project_member(project_id=project_id, member_id=member_id)
         if member is None:
             raise HTTPException(status_code=404, detail="Member not found")
         return member
     
-    async def find_project_member_by_email(self, project_id, member_email):
+    async def find_project_member_by_email(self, project_id: UUID, member_email):
         user = await self.user_serv.get_user_by_email(member_email)
         return await self.repo.get_project_member(
             project_id=project_id,
             member_id=user.id
         )
 
-    async def add_member(self, member_email: str, project_id: int):
+    async def add_member(self, member_email, project_id: UUID):
         project = await self.get_project_by_id(project_id=project_id)
         
         member = await self.user_serv.get_user_by_email(member_email)
@@ -70,10 +70,10 @@ class ProjectServices:
         await self.repo.commit()
         return member
 
-    async def remove_member(self, project_id: int, member_email: str, user_id: int):
+    async def remove_member(self, project_id: UUID, member_email, user_id: UUID):
         member = await self.user_serv.get_user_by_email(email=member_email) # Получаем обьект пользователя по его почте
 
-        if member.id == user_id:
+        if str(member.id) == str(user_id):
             raise HTTPException(status_code=403, detail="Self delete does not allow")
 
         project_member = await self.repo.get_project_member(project_id=project_id, member_id=member.id) # проверяем является ли пользователь участником проекта
@@ -85,7 +85,7 @@ class ProjectServices:
         await self.repo.commit()
         return member
 
-    async def update_project_name(self, project_id: int, name: str):
+    async def update_project_name(self, project_id: UUID, name: str):
         project = await self.get_project_by_id(project_id=project_id)
         project = await self.repo.update_project_name(project=project, name=name)
         await self.repo.commit()

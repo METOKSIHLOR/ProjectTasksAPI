@@ -1,3 +1,4 @@
+from uuid import UUID
 
 from fastapi import Cookie, Depends, HTTPException, Path
 from src.db.repositories.user_repo import UserRepository
@@ -20,7 +21,7 @@ async def get_current_user(session_id = Cookie(None)):
     if user_id is None: # если сессия в куках не совпадает с сессиями в хранилище
         raise HTTPException(status_code=401, detail="Invalid session")
 
-    return int(user_id)
+    return str(user_id)
 
 class CheckUserPerms:
     def __init__(self, roles: list):
@@ -28,7 +29,7 @@ class CheckUserPerms:
 
     async def __call__(self,
                        user_id = Depends(get_current_user),
-                       project_id: int = Path(...),
+                       project_id: UUID = Path(...),
                        session = Depends(get_session)):
         repo = UserRepository(session=session)
         access = await repo.check_user_role(user_id=user_id, project_id=project_id, roles=self.roles)

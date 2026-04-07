@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import APIRouter, Depends
-
+from uuid import UUID
 from src.api.dependencies import CheckUserPerms, get_current_user, get_session
 from src.api.schemas.comments_schemas import CommentInfoSchema, CommentUpdateSchema, CreateCommentSchema
 from src.services.comments_services import CommentsServices
@@ -13,10 +13,10 @@ router = APIRouter(tags=['comments'], prefix='/projects/{project_id}/tasks/{task
                 401: {"description": "Пользователь не залогинен"},
                 404: {"description": "Задача не найдена"}
             })
-async def create_comment_in_task(project_id: int,
-                         task_id: int,
+async def create_comment_in_task(project_id: UUID,
+                         task_id: UUID,
                          comment: CreateCommentSchema,
-                         user_id: int = Depends(get_current_user),
+                         user_id: UUID = Depends(get_current_user),
                          session = Depends(get_session)) -> CommentInfoSchema:
     """Создание комментария в таске, если указанная таска находится в указанном проекте"""
     comm_service = CommentsServices(session)
@@ -29,8 +29,8 @@ async def create_comment_in_task(project_id: int,
                 403: {"description": "Пользователь не является участником проекта"},
                 404: {"description": "Задача не была найдена"},
             })
-async def get_all_comments_in_task(project_id: int,
-                       task_id: int,
+async def get_all_comments_in_task(project_id: UUID,
+                       task_id: UUID,
                        session = Depends(get_session),
                        _: None = Depends(CheckUserPerms(["member", "owner"]))) -> List[CommentInfoSchema]:
     """Получение всех комментариев конкретной таски, если таска находится в указанном проекте"""
@@ -44,11 +44,11 @@ async def get_all_comments_in_task(project_id: int,
                 403: {"description": "Пользователь не является автором комментария"},
                 404: {"description": "Комментарий не был найден | Задача не была найдена"},
             })
-async def update_comment(project_id: int,
-                          task_id: int,
-                          comment_id: int,
+async def update_comment(project_id: UUID,
+                          task_id: UUID,
+                          comment_id: UUID,
                           update: CommentUpdateSchema,
-                          user_id: int = Depends(get_current_user),
+                          user_id: UUID = Depends(get_current_user),
                           session = Depends(get_session)):
     """Обновляет данные о комментарии, если пользователь является его автором и комментарий находится в указанной таске и группе"""
     service = CommentsServices(session)
@@ -61,10 +61,10 @@ async def update_comment(project_id: int,
                 403: {"description": "Пользователь не является автором комментария"},
                 404: {"description": "Комментарий не был найден | Задача не была найдена"},
             })
-async def delete_comment(project_id: int,
-                          task_id: int,
-                          comment_id: int,
-                          user_id: int = Depends(get_current_user),
+async def delete_comment(project_id: UUID,
+                          task_id: UUID,
+                          comment_id: UUID,
+                          user_id: UUID = Depends(get_current_user),
                           session = Depends(get_session)):
     """Удаление комментария из таски, если пользователь является его автором или владельцем проекта"""
     service = CommentsServices(session)

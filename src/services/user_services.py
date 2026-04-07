@@ -9,6 +9,7 @@ from src.db.models import User
 from src.db.redis_storage import storage
 from src.db.repositories.user_repo import UserRepository
 import uuid
+from uuid import UUID
 
 class UserServices:
     def __init__(self, session):
@@ -37,12 +38,12 @@ class UserServices:
 
         session_id = str(uuid.uuid4())
 
-        await storage.set(session_id, user.id, ex=3600)
+        await storage.set(session_id, str(user.id), ex=3600)
 
         return session_id
 
 
-    async def get_user_by_email(self, email: str):
+    async def get_user_by_email(self, email):
         user = await self.repo.get_user_by_email(email=email)
 
         if user is None:
@@ -50,7 +51,7 @@ class UserServices:
         
         return user
 
-    async def get_user_by_id(self, user_id: int):
+    async def get_user_by_id(self, user_id: UUID):
         user = await self.repo.get_user_by_id(user_id=user_id)
 
         if user is None:
@@ -58,14 +59,14 @@ class UserServices:
         
         return user
 
-    async def update_user_name(self, user_id: int, new_name: str):
+    async def update_user_name(self, user_id: UUID, new_name: str):
         user = await self.repo.get_user_by_id(user_id=user_id)
 
         await self.repo.update_user_name(user=user, new_name=new_name)
 
         await self.repo.commit()
 
-    async def get_user_projects(self, user_id):
+    async def get_user_projects(self, user_id: UUID):
         projects = await self.repo.get_user_projects(user_id)
         return projects
 

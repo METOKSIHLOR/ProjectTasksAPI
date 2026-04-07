@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import HTTPException
 
 from src.services.user_services import UserServices
@@ -13,7 +15,7 @@ class CommentsServices:
         self.tasks_service = TasksService(session)
 
     async def create_comment(
-        self, project_id: int, task_id: int, author_id: int, text: str
+        self, project_id: UUID, task_id: UUID, author_id: UUID, text: str
     ):
         await self.tasks_service.get_and_check_task_in_this_project(project_id=project_id, task_id=task_id)
         comment = Comment(task_id=task_id, author_id=author_id, text=text)
@@ -22,7 +24,7 @@ class CommentsServices:
         await self.repo.session.refresh(comment, attribute_names=["author"])
         return comment
 
-    async def get_comments(self, project_id: int, task_id: int):
+    async def get_comments(self, project_id: UUID, task_id: UUID):
         #проверяем есть ли такая таска в проекте вообще
         await self.tasks_service.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)
 
@@ -41,13 +43,13 @@ class CommentsServices:
         ]
 
     async def update_comment(
-        self, project_id: int, comment_id: int, task_id: int, user_id: int, text: str
+        self, project_id: UUID, comment_id: UUID, task_id: UUID, user_id: UUID, text: str
     ):
         comment = await self.get_comment_belong_to_task(
             project_id=project_id, comment_id=comment_id, task_id=task_id
         )
 
-        if comment.author_id != user_id:
+        if str(comment.author_id) != str(user_id):
             raise HTTPException(
                 status_code=403, detail="Not authorized"
             )
@@ -57,7 +59,7 @@ class CommentsServices:
         return comment
 
     async def delete_comment(
-        self, project_id: int, comment_id: int, task_id: int, user_id: int
+        self, project_id: UUID, comment_id: UUID, task_id: UUID, user_id: UUID
     ):
         user_serv = UserServices(session=self.repo.session)
         comment = await self.get_comment_belong_to_task(
@@ -74,7 +76,7 @@ class CommentsServices:
         return comment
 
     async def get_comment_belong_to_task(
-        self, comment_id: int, task_id: int, project_id: int
+        self, comment_id: UUID, task_id: UUID, project_id: UUID
     ):
         await self.tasks_service.get_and_check_task_in_this_project(
             task_id=task_id, project_id=project_id

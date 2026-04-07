@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -24,7 +26,7 @@ class ProjectRepository:
         return project
 
 
-    async def get_project_by_id(self, project_id: int):
+    async def get_project_by_id(self, project_id: UUID):
         stmt = select(Project).where(Project.id == project_id).options(
         selectinload(Project.members).selectinload(ProjectMember.user))
         project = await self.session.execute(stmt)
@@ -40,7 +42,7 @@ class ProjectRepository:
         await self.session.flush()
         return member
 
-    async def get_project_member(self, project_id: int, member_id):
+    async def get_project_member(self, project_id: UUID, member_id):
         stmt = select(ProjectMember).where(and_(ProjectMember.project_id == project_id, ProjectMember.user_id == member_id))
         member = await self.session.execute(stmt)
         return member.scalar_one_or_none()

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException
 from fastapi import Response
 from fastapi.params import Depends, Cookie
@@ -84,7 +86,7 @@ async def user_logout(response: Response, session_id=Cookie(None)):
     },
 )
 async def get_user_profile(
-    user_id: int = Depends(get_current_user),
+    user_id: UUID = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     """Пользователь получает данные о своем аккаунте, который определяется по номеру его сессии в куках"""
@@ -96,7 +98,7 @@ async def get_user_profile(
               responses={401: {"description": "Пользователь не авторизован"}})
 async def update_user_profile(
     update: UpdateUserSchema,
-    user_id: int = Depends(get_current_user),
+    user_id: UUID = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     """Обновляет пока что только никнейм"""

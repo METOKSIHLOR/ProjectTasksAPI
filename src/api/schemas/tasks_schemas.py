@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from src.db.models import AllowedTaskStatus
@@ -28,15 +30,14 @@ class CreateTaskSchema(TaskSchema):
 
 class TaskInfoSchema(TaskSchemaWithStatus):
     """Схема для получения информации о таске"""
-    id: int = Field(title="Айди таски",
-                    gt=0,lt=2147483647)
+    id: UUID = Field(title="Айди таски", description="должно быть uuid")
 
     assignee_email: EmailStr = Field(title="Почта исполнителя",
                              description="Почта человека, который должен выполнить таску",
                              examples=["metoks@gmail.com"])
 
 class UpdateTaskSchema(TaskSchema):
-    '''Схема для обновления данных в таске. Для полей которые обновлять не надо оставить None'''
+    """Схема для обновления данных в таске. Для полей которые обновлять не надо оставить None"""
     title: str | None = Field(None, title="Название таски", 
                        description="Если обновлять поле не надо - оставить None", 
                        examples=["Create web API"])

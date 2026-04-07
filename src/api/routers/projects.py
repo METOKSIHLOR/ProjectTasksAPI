@@ -7,6 +7,7 @@ from src.api.dependencies import CheckUserPerms, get_current_user, get_session
 from src.api.schemas.project_schemas import CreateProjectSchema, UpdateProjectSchema, ProjectInfoSchema, ProjectMemberIdSchema, ProjectResponseSchema
 from src.services.project_services import ProjectServices
 from src.services.user_services import UserServices
+from uuid import UUID
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/projects", tags=["projects"])
             })
 async def create_project(project: CreateProjectSchema,
                          session: AsyncSession = Depends(get_session),
-                         user_id: int = Depends(get_current_user)):
+                         user_id: UUID = Depends(get_current_user)):
     """Создание нового проекта"""
     services = ProjectServices(session)
     project = await services.create_new_project(project, user_id)
@@ -27,7 +28,7 @@ async def create_project(project: CreateProjectSchema,
                 401: {"description": "Пользователь не залогинен"},
                 403: {"description": "Пользователь не является владельцем проекта"},
             })
-async def delete_project(project_id: int,
+async def delete_project(project_id: UUID,
                          session: AsyncSession = Depends(get_session),
                          _: None = Depends(CheckUserPerms(['owner']))):
     """Удаление всего проекта, если юзер является его создателем"""
@@ -53,7 +54,7 @@ async def get_all_user_projects(user_id = Depends(get_current_user), session = D
                 403: {"description": "Пользователь не является участником проекта"},
                 404: {"description": "Проект не был найден"}
             })
-async def get_project_details(project_id: int,
+async def get_project_details(project_id: UUID,
                               session: AsyncSession = Depends(get_session),
                               _: None = Depends(CheckUserPerms(["member", "owner"]))) -> ProjectInfoSchema:
     """Возвращает название и участников проекта по его айди"""
@@ -70,7 +71,7 @@ async def get_project_details(project_id: int,
                 403: {"description": "Пользователь не является владельцем проекта"},
                 404: {"description": "Проект не был найден"}
             })
-async def update_project_name(project_id: int,
+async def update_project_name(project_id: UUID,
                                  update: UpdateProjectSchema,
                                  session = Depends(get_session),
                                  _: None = Depends(CheckUserPerms(["owner"]))):
@@ -88,7 +89,7 @@ async def update_project_name(project_id: int,
                 404: {"description": "Проект не был найден"},
                 409: {"description": "Пользователь уже находится в проекте"}
             })
-async def add_project_member(project_id: int, member: ProjectMemberIdSchema,
+async def add_project_member(project_id: UUID, member: ProjectMemberIdSchema,
                              session: AsyncSession = Depends(get_session),
                              _: None = Depends(CheckUserPerms(["owner"]))):
     """Добавление в указанную группу нового участника, если пользователь является владельцем"""
@@ -104,7 +105,7 @@ async def add_project_member(project_id: int, member: ProjectMemberIdSchema,
                 403: {"description": "Пользователь не является владельцем проекта | Попытка удалить себя же"},
                 404: {"description": "Проект не был найден | Участник не был найден"},
             })
-async def remove_project_member(project_id: int,
+async def remove_project_member(project_id: UUID,
                                 member: ProjectMemberIdSchema,
                                 session: AsyncSession = Depends(get_session),
                                 user_id = Depends(get_current_user),

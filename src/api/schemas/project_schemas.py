@@ -1,3 +1,4 @@
+from uuid import UUID
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -11,10 +12,8 @@ class ProjectSchema(BaseModel):
                       examples=["Microsoft API project"])
 
 class ProjectSchemaWithId(ProjectSchema):
-    id: int = Field(title="Айди проекта",
-                    description="Должно быть больше 0 и меньше 2147483647",
-                    gt=0,
-                    lt=2147483647)
+    id: UUID = Field(title="Айди проекта",
+                    description="Должно быть uuid",)
 
 class ProjectResponseSchema(ProjectSchemaWithId):
     """Схема для ответов. Возвращает айди проекта и его название"""

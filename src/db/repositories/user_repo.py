@@ -1,4 +1,5 @@
 from typing import List
+from uuid import UUID
 
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,7 +22,7 @@ class UserRepository:
         await self.session.flush()
         return user
 
-    async def get_user_by_id(self, user_id: int):
+    async def get_user_by_id(self, user_id: UUID):
         user = await self.session.execute(select(User).where(User.id == user_id))
         return user.scalar_one_or_none()
 
@@ -29,7 +30,7 @@ class UserRepository:
         user = await self.session.execute(select(User).where(User.email == email))
         return user.scalar_one_or_none()
 
-    async def get_user_projects(self, user_id: int):
+    async def get_user_projects(self, user_id: UUID):
         stmt = (
             select(Project)
             .join(ProjectMember)
@@ -39,7 +40,7 @@ class UserRepository:
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def check_user_role(self, user_id, project_id, roles: List[str]) -> bool:
+    async def check_user_role(self, user_id: UUID, project_id: UUID, roles: List[str]) -> bool:
         stmt = select(ProjectMember).where(and_(ProjectMember.project_id == project_id, ProjectMember.user_id == user_id))
         result = await self.session.execute(stmt)
         member = result.scalar_one_or_none()

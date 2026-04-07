@@ -1,3 +1,4 @@
+from uuid import UUID
 
 from fastapi import HTTPException
 
@@ -18,7 +19,7 @@ class TasksService:
         self.project = ProjectServices(session)
         self.user_serv = UserServices(session=session)
 
-    async def create_task(self, project_id: int, task: CreateTaskSchema):
+    async def create_task(self, project_id: UUID, task: CreateTaskSchema):
         # проверяем существует ли пользователь с такой почтой
         member = await self.user_serv.get_user_by_email(task.assignee_email)
 
@@ -48,7 +49,7 @@ class TasksService:
             assignee_email=task.assignee.email,
         )
 
-    async def get_and_check_task_in_this_project(self, task_id, project_id):
+    async def get_and_check_task_in_this_project(self, task_id: UUID, project_id: UUID):
         task = await self.repo.get_task_by_project(
             project_id=project_id, task_id=task_id
         )
@@ -58,17 +59,17 @@ class TasksService:
         
         return task
 
-    async def get_tasks_by_project_id(self, project_id: int):
+    async def get_tasks_by_project_id(self, project_id: UUID):
         tasks = await self.repo.get_project_tasks(project_id)
         return tasks
 
-    async def delete_task(self, task_id: int, project_id: int):
+    async def delete_task(self, task_id: UUID, project_id: UUID):
         task = await self.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)
         await self.repo.delete_task(task)
         await self.repo.commit()
 
     async def update_task(
-        self, user_id: int, task_id: int, project_id, new_task: UpdateTaskSchema
+        self, user_id: UUID, task_id: UUID, project_id: UUID, new_task: UpdateTaskSchema
     ):
         #получаем таску, если она есть в этом проекте 
         task = await self.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)

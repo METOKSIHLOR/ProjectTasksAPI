@@ -3,6 +3,8 @@ from typing import Literal, get_args
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, validates, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+import uuid
 
 AllowedTaskStatus = Literal["todo", "in_progress", "done"]
 AllowedRoles = Literal['owner', 'member']
@@ -11,7 +13,7 @@ class Base(DeclarativeBase):
 
 class User(Base):
     __tablename__ = "users"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID, primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(unique=True, nullable=False)
     hash_password: Mapped[str] = mapped_column(nullable=False)
     name: Mapped[str] = mapped_column(nullable=False)
@@ -20,9 +22,9 @@ class User(Base):
 
 class Project(Base):
     __tablename__ = "projects"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(nullable=False)
-    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    owner_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("users.id"), nullable=False)
 
     members = relationship("ProjectMember",
                            back_populates="project",
@@ -38,8 +40,8 @@ class Project(Base):
 class ProjectMember(Base):
     __tablename__ = "project_members"
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True,)
-    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("users.id"), primary_key=True)
+    project_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("projects.id"), primary_key=True)
     role: Mapped[str] = mapped_column(default='member', nullable=False)
 
     user = relationship("User", back_populates="memberships")
@@ -63,12 +65,12 @@ class ProjectMember(Base):
 class Task(Base):
     __tablename__ = "tasks"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID, primary_key=True, default=uuid.uuid4)
+    project_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     title: Mapped[str] = mapped_column(nullable=False)
     status: Mapped[AllowedTaskStatus] = mapped_column(default='todo', nullable=False)
     description: Mapped[str] = mapped_column(nullable=False)
-    assignee_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    assignee_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
     project = relationship("Project", back_populates="tasks")
@@ -92,15 +94,14 @@ class Task(Base):
 class Comment(Base):
     __tablename__ = "comments"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False,)
-    author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID, primary_key=True, default=uuid.uuid4)
+    task_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False,)
+    author_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("users.id"), nullable=False)
     text: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
     task = relationship("Task", back_populates="comments")
     author = relationship("User")
-
     @property
     def author_name(self):
         return self.author.name 

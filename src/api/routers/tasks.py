@@ -1,4 +1,5 @@
 from typing import List
+from uuid import UUID
 
 from fastapi import APIRouter
 from fastapi.params import Depends
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/projects/{project_id}/tasks", tags=["tasks"])
                 401: {"description": "Пользователь не залогинен"},
                 404: {"description": "Исполняющий задание не существует в данном проекте"}
             })
-async def create_task(project_id: int,
+async def create_task(project_id: UUID,
                       task: CreateTaskSchema,
                       session: AsyncSession = Depends(get_session),
                       _: None = Depends(CheckUserPerms(["owner"]))) -> TaskInfoSchema:
@@ -32,7 +33,7 @@ async def create_task(project_id: int,
                 403: {"description": "Пользователь не является участником проекта"},
                 404: {"description": "Проект не был найден"}
             })
-async def get_all_tasks_in_project(project_id: int,
+async def get_all_tasks_in_project(project_id: UUID,
                             session: AsyncSession = Depends(get_session),
                             _: None = Depends(CheckUserPerms(["member","owner"]))) -> List[TaskInfoSchema]:
     """Получение всех тасок в указанном проекте, если пользователь является его участником"""
@@ -41,8 +42,8 @@ async def get_all_tasks_in_project(project_id: int,
     return tasks
 
 @router.get("/{task_id}", summary="Получить одну конкретную таску")
-async def get_task(project_id: int,
-                   task_id: int,
+async def get_task(project_id: UUID,
+                   task_id: UUID,
                    session: AsyncSession = Depends(get_session),
                    _: None = Depends(CheckUserPerms(["member","owner"]))) -> TaskInfoSchema:
     task_serv = TasksService(session=session)
@@ -58,8 +59,8 @@ async def get_task(project_id: int,
                     404: {"description": "Задача не была найдена"}
                 })
 async def delete_task(
-        project_id: int,
-        task_id: int,
+        project_id: UUID,
+        task_id: UUID,
         session = Depends(get_session),
         _: None = Depends(CheckUserPerms(["owner"]))):
     """Удаление таски из проекта и бд, если юзер является создателем проекта"""
@@ -75,10 +76,10 @@ async def delete_task(
                 403: {"description": "Пользователь не является владельцем проекта"},
                 404: {"description": "Задача не была найдена | Пользователь не был найден"}
             })
-async def update_task(project_id: int,
-                      task_id: int,
+async def update_task(project_id: UUID,
+                      task_id: UUID,
                       new_task: UpdateTaskSchema,
-                      user_id: int = Depends(get_current_user),
+                      user_id: UUID = Depends(get_current_user),
                       session = Depends(get_session),
                       _: None = Depends(CheckUserPerms(["member","owner"]))):
     """Обновление данных о таске. Исполнитель может менять только статус задачи, владелец все поля. 
