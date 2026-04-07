@@ -2,7 +2,7 @@
 from fastapi import Cookie, Depends, HTTPException, Path
 from src.db.repositories.user_repo import UserRepository
 import src.db.session as sess
-from src.api.authorization.storage import storage
+from src.db.redis_storage import storage
 
 
 async def get_session():

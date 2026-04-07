@@ -17,7 +17,14 @@ class UserRegistrationSchema(UserCredsSchema):
     name: str = Field(min_length=3, title="Имя пользователя",
                       description="Не меньше 3 символов",
                       examples=["METOKS", "Antooooooon"])
-    
+
+class UpdateUserSchema(BaseModel):
+    """Схема для обновления имени пользователя"""
+    name: str = Field(min_length=3, title="Имя пользователя",
+                      description="Не меньше 3 символов",
+                      examples=["METOKS", "Antooooooon"])
+
+
 class UserResponseSchema(BaseModel):
     """Схема для получения данных о юзере. Его имя и почта"""
     name: str = Field(min_length=3, title="Имя пользователя",

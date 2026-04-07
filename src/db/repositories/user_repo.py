@@ -16,11 +16,16 @@ class UserRepository:
         await self.session.flush()
         return user
 
+    async def update_user_name(self, user: User, new_name: str):
+        user.name = new_name
+        await self.session.flush()
+        return user
+
     async def get_user_by_id(self, user_id: int):
         user = await self.session.execute(select(User).where(User.id == user_id))
         return user.scalar_one_or_none()
 
-    async def get_user_by_email(self, email: EmailStr):
+    async def get_user_by_email(self, email):
         user = await self.session.execute(select(User).where(User.email == email))
         return user.scalar_one_or_none()
 

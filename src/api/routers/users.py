@@ -3,12 +3,12 @@ from fastapi import Response
 from fastapi.params import Depends, Cookie
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.authorization.storage import storage
+from src.db.redis_storage import storage
 from src.api.dependencies import get_session, get_current_user
 from src.api.schemas.user_schemas import (
     UserRegistrationSchema,
     UserResponseSchema,
-    UserCredsSchema,
+    UserCredsSchema, UpdateUserSchema,
 )
 from src.services.user_services import UserServices
 
@@ -91,3 +91,15 @@ async def get_user_profile(
     service = UserServices(session)
     user = await service.get_user_by_id(user_id=user_id)  # получаем юзера
     return user
+
+@router.patch("/me", summary="Обновить имя пользователя",
+              responses={401: {"description": "Пользователь не авторизован"}})
+async def update_user_profile(
+    update: UpdateUserSchema,
+    user_id: int = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Обновляет пока что только никнейм"""
+    service = UserServices(session)
+    await service.update_user_name(user_id=user_id, new_name=update.name)
+    return {"success": True}

@@ -3,9 +3,10 @@ from typing import List
 from fastapi import HTTPException
 
 from src.api.authorization.hash import hash_password, verify_password
-from src.api.authorization.storage import storage
+
 from src.api.schemas.user_schemas import UserRegistrationSchema, UserCredsSchema
 from src.db.models import User
+from src.db.redis_storage import storage
 from src.db.repositories.user_repo import UserRepository
 import uuid
 
@@ -57,11 +58,18 @@ class UserServices:
         
         return user
 
+    async def update_user_name(self, user_id: int, new_name: str):
+        user = await self.repo.get_user_by_id(user_id=user_id)
+
+        await self.repo.update_user_name(user=user, new_name=new_name)
+
+        await self.repo.commit()
+
     async def get_user_projects(self, user_id):
         projects = await self.repo.get_user_projects(user_id)
         return projects
 
-    async def check_user_role(self, user_id, project_id, roles: List[str]) -> bool:
+    async def check_user_role(self, user_id, project_id, roles: List[str]):
         if not await self.repo.check_user_role(user_id=user_id, project_id=project_id, roles=roles):  # проверяем соответствие роли пользователя
             raise HTTPException(status_code=403, detail="Not authorized")
 

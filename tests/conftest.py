@@ -18,7 +18,7 @@ os.environ.setdefault("ALLOW_ORIGINS", "http://localhost")
 os.environ.setdefault("ALLOW_METHODS", "*")
 os.environ.setdefault("ALLOW_HEADERS", "*")
 
-from src.api.authorization.storage import storage
+
 from src.api.dependencies import get_session
 from src.api.main import app
 from src.db.models import Base
