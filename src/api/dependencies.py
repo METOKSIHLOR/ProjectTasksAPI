@@ -1,3 +1,4 @@
+import uuid
 from uuid import UUID
 
 from fastapi import Cookie, Depends, HTTPException, Path
@@ -16,12 +17,12 @@ async def get_current_user(session_id = Cookie(None)):
     if session_id is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    user_id = await storage.get(session_id) # достаем айди из редиса
+    user_id = await storage.get(f"session_id:{session_id}") # достаем айди из редиса
 
     if user_id is None: # если сессия в куках не совпадает с сессиями в хранилище
         raise HTTPException(status_code=401, detail="Invalid session")
 
-    return str(user_id)
+    return uuid.UUID(user_id)
 
 class CheckUserPerms:
     def __init__(self, roles: list):

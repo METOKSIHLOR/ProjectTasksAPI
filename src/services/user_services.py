@@ -38,7 +38,7 @@ class UserServices:
 
         session_id = str(uuid.uuid4())
 
-        await storage.set(session_id, str(user.id), ex=3600)
+        await storage.set("session_id:" + session_id, str(user.id), ex=3600)
 
         return session_id
 

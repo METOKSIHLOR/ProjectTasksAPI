@@ -69,7 +69,7 @@ async def user_logout(response: Response, session_id=Cookie(None)):
     if session_id is None:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    response.delete_cookie(key="session_id")  # удаляем из куков сессию
+    response.delete_cookie(key=f"session_id:{session_id}")  # удаляем из куков сессию
 
     await storage.delete(session_id)  # удаляем из хранилища сессию
 
