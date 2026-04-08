@@ -90,7 +90,7 @@ class TasksService:
 
             if assignee is None:
                 raise AssigneeNotFoundException(project_id=project_id,
-                                                task_id=task.task_id,
+                                                task_id=task.id,
                                                 assignee_id=dict_task["assignee_email"])
 
             dict_task["assignee_id"] = assignee.user_id
