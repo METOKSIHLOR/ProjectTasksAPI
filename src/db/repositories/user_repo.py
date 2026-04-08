@@ -1,7 +1,6 @@
 from typing import List
 from uuid import UUID
 
-from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 

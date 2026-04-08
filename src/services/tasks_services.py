@@ -1,7 +1,7 @@
 from uuid import UUID
 
-from fastapi import HTTPException
 
+from src.api.exceptions.tasks_exceptions import TaskNotFoundException, AssigneeNotFoundException
 from src.api.schemas.tasks_schemas import (
     CreateTaskSchema,
     UpdateTaskSchema,
@@ -29,7 +29,7 @@ class TasksService:
         )
 
         if assignee is None:
-            raise HTTPException(status_code=404, detail="Assignee doesn't exists")
+            raise AssigneeNotFoundException(project_id=project_id, task_id=task.task_id, assignee_id=task.assignee_id)
 
         task = await self.repo.create_task(
             Task(
@@ -55,7 +55,7 @@ class TasksService:
         )
 
         if task is None:
-            raise HTTPException(status_code=404, detail="Task not found")
+            raise TaskNotFoundException(project_id=project_id, task_id=task_id)
         
         return task
 
@@ -89,7 +89,9 @@ class TasksService:
             )
 
             if assignee is None:
-                raise HTTPException(status_code=404, detail="Member not found")
+                raise AssigneeNotFoundException(project_id=project_id,
+                                                task_id=task.task_id,
+                                                assignee_id=dict_task["assignee_email"])
 
             dict_task["assignee_id"] = assignee.user_id
             del dict_task["assignee_email"]

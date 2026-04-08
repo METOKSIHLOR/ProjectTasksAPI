@@ -1,8 +1,9 @@
 from typing import List
 
-from fastapi import HTTPException
 
 from src.api.authorization.hash import hash_password, verify_password
+from src.api.exceptions.users_exceptions import  ConflictEmailException, InvalidUserCredentialsException, \
+    UserNotFoundException, UserNotAuthorizedException
 
 from src.api.schemas.user_schemas import UserRegistrationSchema, UserCredsSchema
 from src.db.models import User
@@ -22,7 +23,7 @@ class UserServices:
         email_exast = await self.repo.get_user_by_email(email=schema.email)
 
         if email_exast is not None:
-             raise HTTPException(status_code=409, detail="This email already exists")
+             raise ConflictEmailException(email=schema.email)
         
         user = await self.repo.create_user(model)
 
@@ -34,7 +35,7 @@ class UserServices:
         user = await self.repo.get_user_by_email(schema.email)
 
         if user is None or not verify_password(schema.password, user.hash_password):
-            raise HTTPException(status_code=401, detail="Incorrect email or password")
+            raise InvalidUserCredentialsException()
 
         session_id = str(uuid.uuid4())
 
@@ -47,7 +48,7 @@ class UserServices:
         user = await self.repo.get_user_by_email(email=email)
 
         if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise UserNotFoundException(user_identifier=email)
         
         return user
 
@@ -55,7 +56,7 @@ class UserServices:
         user = await self.repo.get_user_by_id(user_id=user_id)
 
         if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise UserNotFoundException(user_identifier=user_id)
         
         return user
 
@@ -72,5 +73,5 @@ class UserServices:
 
     async def check_user_role(self, user_id, project_id, roles: List[str]):
         if not await self.repo.check_user_role(user_id=user_id, project_id=project_id, roles=roles):  # проверяем соответствие роли пользователя
-            raise HTTPException(status_code=403, detail="Not authorized")
+            raise UserNotAuthorizedException()
 

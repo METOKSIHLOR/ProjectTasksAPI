@@ -1,7 +1,8 @@
 from uuid import UUID
 
-from fastapi import HTTPException
 
+from src.api.exceptions.comments_exceptions import CommentNotFoundException
+from src.api.exceptions.users_exceptions import UserNotAuthenticatedException
 from src.services.user_services import UserServices
 from src.api.schemas.comments_schemas import CommentInfoSchema
 from src.db.models import Comment
@@ -50,9 +51,7 @@ class CommentsServices:
         )
 
         if str(comment.author_id) != str(user_id):
-            raise HTTPException(
-                status_code=403, detail="Not authorized"
-            )
+            raise UserNotAuthenticatedException(user_id=user_id)
 
         await self.repo.update_comment(comment=comment, text=text)
         await self.repo.commit()
@@ -85,7 +84,6 @@ class CommentsServices:
             comment_id=comment_id, task_id=task_id
         )
         if comment is None:
-            raise HTTPException(
-                status_code=404, detail="Comment not found"
-            )
+            raise CommentNotFoundException(project_id=project_id, task_id=task_id, comment_id=comment_id)
+
         return comment

@@ -1,7 +1,9 @@
 import uuid
 from uuid import UUID
 
-from fastapi import Cookie, Depends, HTTPException, Path
+from fastapi import Cookie, Depends, Path
+
+from src.api.exceptions.users_exceptions import UserNotAuthorizedException, UserNotAuthenticatedException
 from src.db.repositories.user_repo import UserRepository
 import src.db.session as sess
 from src.db.redis_storage import storage
@@ -15,12 +17,12 @@ async def get_session():
 async def get_current_user(session_id = Cookie(None)):
     """обращаемся в куки пользователя и достаем оттуда айди его сессии, из которого достаем в хранилище его айди"""
     if session_id is None:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise UserNotAuthorizedException()
 
     user_id = await storage.get(f"session_id:{session_id}") # достаем айди из редиса
 
     if user_id is None: # если сессия в куках не совпадает с сессиями в хранилище
-        raise HTTPException(status_code=401, detail="Invalid session")
+        raise UserNotAuthorizedException()
 
     return uuid.UUID(user_id)
 
@@ -36,5 +38,5 @@ class CheckUserPerms:
         access = await repo.check_user_role(user_id=user_id, project_id=project_id, roles=self.roles)
         
         if not access:
-            raise HTTPException(status_code=403, detail="Not authorized")
+            raise UserNotAuthenticatedException(user_id=user_id)
 

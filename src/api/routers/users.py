@@ -1,10 +1,11 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi import Response
 from fastapi.params import Depends, Cookie
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api.exceptions.users_exceptions import UserNotAuthorizedException
 from src.db.redis_storage import storage
 from src.api.dependencies import get_session, get_current_user
 from src.api.schemas.user_schemas import (
@@ -61,13 +62,13 @@ async def user_login(
 @router.post(
     "/auth/logout",
     summary="Разлогинить пользователя",
-    responses={401: {"description": "Пользователь не авторизован"}},
+    responses={403: {"description": "Пользователь не авторизован"}},
 )
 async def user_logout(response: Response, session_id=Cookie(None)):
     """Разлогин пользователя и удаление его сессии из хранилища и куков"""
 
     if session_id is None:
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise UserNotAuthorizedException()
 
     response.delete_cookie(key="session_id")  # удаляем из куков сессию
 
