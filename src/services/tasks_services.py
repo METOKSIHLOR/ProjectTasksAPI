@@ -28,9 +28,6 @@ class TasksService:
             project_id=project_id, member_id=member.id
         )
 
-        if assignee is None:
-            raise AssigneeNotFoundException(project_id=project_id, task_id=task.task_id, assignee_id=task.assignee_id)
-
         task = await self.repo.create_task(
             Task(
                 project_id=project_id,
