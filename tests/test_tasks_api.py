@@ -112,7 +112,7 @@ async def test_member_can_only_update_task_status_not_other_fields(test_client):
         json={"status": "in_progress"},
     )
 
-    assert forbidden.status_code == 403
+    assert forbidden.status_code == 401
     assert allowed.status_code == 200
 
 
@@ -184,3 +184,15 @@ async def test_delete_task_happy_path(owner_client, owner_project_id, owner_task
 
     assert delete_response.status_code == 200
     assert get_response.status_code == 404
+
+@pytest.mark.asyncio
+async def test_task_routes_require_authentication(test_client, owner_project_id):
+    await test_client.post("/users/auth/logout")
+    response = await test_client.get(f"/projects/{owner_project_id}/tasks")
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_task_routes_reject_invalid_task_uuid(owner_client, owner_project_id):
+    response = await owner_client.get(f"/projects/{owner_project_id}/tasks/not-a-uuid")
+    assert response.status_code == 422

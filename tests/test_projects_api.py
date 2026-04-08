@@ -147,3 +147,20 @@ async def test_remove_member_not_in_project_returns_404(test_client):
         json={"email": "lonely_remove404@example.com"},
     )
     assert response.status_code == 404
+
+@pytest.mark.asyncio
+async def test_project_routes_require_authentication(test_client):
+    create_response = await test_client.post("/projects", json={"name": "No Auth"})
+    list_response = await test_client.get("/projects")
+
+    assert create_response.status_code == 401
+    assert list_response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_project_routes_reject_invalid_uuid(test_client):
+    await register_user(test_client, "Owner", "owner_uuid_project@example.com")
+    await login_user(test_client, "owner_uuid_project@example.com")
+
+    response = await test_client.get("/projects/not-a-uuid")
+    assert response.status_code == 422

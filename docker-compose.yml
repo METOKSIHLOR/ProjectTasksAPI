@@ -22,20 +22,20 @@ services:
       redis:
         condition: service_started
         
-  # frontend:
-  #   build: ./frontend
-  #   container_name: frontend
-  #   command: npm run dev
-  #   ports:
-  #     - "5173:5173"
-  #   working_dir: /app
-  #   volumes:
-  #     - ./frontend:/app
-  #     - /app/node_modules
-  #   environment:
-  #     CHOKIDAR_USEPOLLING: "true"  # важно для Linux/WSL, чтобы Vite видел изменения
-  #   depends_on:
-  #     - backend
+#  frontend:
+#     build: ./frontend
+#     container_name: frontend
+#     command: npm run dev
+#     ports:
+#       - "5173:5173"
+#     working_dir: /app
+#     volumes:
+#       - ./frontend:/app
+#       - /app/node_modules
+#     environment:
+#       CHOKIDAR_USEPOLLING: "true"  # важно для Linux/WSL, чтобы Vite видел изменения
+#     depends_on:
+#       - backend
         
   postgres:
     image: postgres:15

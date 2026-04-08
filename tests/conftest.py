@@ -4,6 +4,9 @@ from collections.abc import AsyncGenerator
 import httpx
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+import uuid
+
+from src.db.redis_storage import storage
 from tests.helpers import login_user, register_user
 
 # Минимальный набор env-переменных, чтобы импортировать config/app в тестах.
@@ -86,14 +89,14 @@ async def member_client(test_client: httpx.AsyncClient) -> httpx.AsyncClient:
 
 
 @pytest_asyncio.fixture
-async def owner_project_id(owner_client: httpx.AsyncClient) -> int:
+async def owner_project_id(owner_client: httpx.AsyncClient) -> uuid.UUID:
     response = await owner_client.post("/projects", json={"name": "Alpha project"})
     assert response.status_code == 200
     return response.json()["id"]
 
 
 @pytest_asyncio.fixture
-async def owner_task_id(owner_client: httpx.AsyncClient, owner_project_id: int) -> int:
+async def owner_task_id(owner_client: httpx.AsyncClient, owner_project_id: uuid.UUID) -> uuid.UUID:
     response = await owner_client.post(
         f"/projects/{owner_project_id}/tasks",
         json={

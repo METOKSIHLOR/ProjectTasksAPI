@@ -116,7 +116,7 @@ async def test_delete_comment_happy_path(owner_client, owner_project_id, owner_t
 @pytest.mark.asyncio
 async def test_delete_comment_not_found_returns_404(owner_client, owner_project_id, owner_task_id):
     response = await owner_client.delete(
-        f"/projects/{owner_project_id}/tasks/{owner_task_id}/comments/9999"
+        f"/projects/{owner_project_id}/tasks/{owner_task_id}/comments/00000000-0000-0000-0000-000000000000"
     )
 
     assert response.status_code == 404
@@ -152,7 +152,7 @@ async def test_non_author_and_non_owner_cannot_delete_comment(test_client):
     response = await test_client.delete(
         f"/projects/{project_id}/tasks/{task_id}/comments/{comment_id}"
     )
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio
@@ -196,3 +196,11 @@ async def test_comment_endpoints_require_authentication(owner_project_id, owner_
     await test_client.post("/users/auth/logout")
     response = await test_client.get(f"/projects/{owner_project_id}/tasks/{owner_task_id}/comments")
     assert response.status_code == 401
+
+@pytest.mark.asyncio
+async def test_comment_endpoint_rejects_invalid_uuid_ids(owner_client, owner_project_id, owner_task_id):
+    response = await owner_client.patch(
+        f"/projects/{owner_project_id}/tasks/{owner_task_id}/comments/not-a-uuid",
+        json={"text": "x"},
+    )
+    assert response.status_code == 422

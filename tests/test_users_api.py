@@ -20,7 +20,7 @@ async def test_user_registration_duplicate_email_returns_409(test_client):
     response = await register_user(test_client, "Anton 2", "anton@example.com")
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "This email already exists"
+    assert response.json()["detail"] == "User email already in use"
 
 
 @pytest.mark.asyncio
@@ -51,7 +51,7 @@ async def test_login_with_wrong_password_returns_401(test_client):
     response = await login_user(test_client, "anton@example.com", password="wrong")
 
     assert response.status_code == 401
-    assert response.json()["detail"] == "Incorrect email or password"
+    assert response.json()["detail"] == "Invalid credentials"
 
 
 @pytest.mark.asyncio
@@ -59,7 +59,7 @@ async def test_get_me_requires_auth_cookie(test_client):
     response = await test_client.get("/users/me")
 
     assert response.status_code == 401
-    assert response.json()["detail"] == "Not authenticated"
+    assert response.json()["detail"] == "User not authorized"
 
 
 @pytest.mark.asyncio
@@ -74,11 +74,11 @@ async def test_get_me_happy_path(test_client):
 
 
 @pytest.mark.asyncio
-async def test_logout_without_cookie_returns_403(test_client):
+async def test_logout_without_cookie_returns_401(test_client):
     response = await test_client.post("/users/auth/logout")
 
-    assert response.status_code == 403
-    assert response.json()["detail"] == "Not authorized"
+    assert response.status_code == 401
+    assert response.json()["detail"] == "User not authorized"
 
 
 @pytest.mark.asyncio
@@ -92,18 +92,34 @@ async def test_logout_invalidates_session_and_future_me_is_401(test_client):
     assert logout_response.status_code == 200
     assert logout_response.json() == {"success": True}
     assert me_response.status_code == 401
-    assert me_response.json()["detail"] == "Not authenticated"
+    assert me_response.json()["detail"] == "User not authorized"
     
 @pytest.mark.asyncio
 async def test_get_me_with_invalid_session_cookie_returns_401(test_client):
     test_client.cookies.set("session_id", "definitely-invalid-session")
     response = await test_client.get("/users/me")
     assert response.status_code == 401
-    assert response.json()["detail"] == "Invalid session"
+    assert response.json()["detail"] == "User not authorized"
 
 
 @pytest.mark.asyncio
 async def test_login_with_unknown_email_returns_401(test_client):
     response = await login_user(test_client, "ghost@example.com")
     assert response.status_code == 401
-    assert response.json()["detail"] == "Incorrect email or password"
+    assert response.json()["detail"] == "Invalid credentials"
+
+
+@pytest.mark.asyncio
+async def test_update_me_requires_auth_cookie(test_client):
+    response = await test_client.patch("/users/me", json={"name": "New Name"})
+
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_update_me_validation_error_for_short_name(test_client):
+    await register_user(test_client, "Anton", "anton@example.com")
+    await login_user(test_client, "anton@example.com")
+
+    response = await test_client.patch("/users/me", json={"name": "ab"})
+    assert response.status_code == 422
