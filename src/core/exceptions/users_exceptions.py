@@ -18,14 +18,14 @@ class ConflictEmailException(BaseAPIException):
         )
 
 class UserNotFoundException(BaseAPIException):
-    def __init__(self, user_identifier: uuid.UUID | str):
+    def __init__(self, user_cred: uuid.UUID | str):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
             error_code="USER_NOT_FOUND",
-            log_message=f"User {user_identifier} not found in DB",
+            log_message=f"User {user_cred} not found in DB",
             extra_data={
-                "user_identifier": str(user_identifier),
+                "user_credential": str(user_cred),
             },
         )
 
@@ -47,12 +47,9 @@ class UserNotAuthorizedException(BaseAPIException):
         )
 
 class UserNotAuthenticatedException(BaseAPIException):
-    def __init__(self, user_id: uuid.UUID):
+    def __init__(self,):
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User not authenticated",
             error_code="USER_NOT_AUTHENTICATED",
-            extra_data={
-                "user_id": str(user_id)
-            }
         )

@@ -62,7 +62,7 @@ async def user_login(
 @router.post(
     "/auth/logout",
     summary="Разлогинить пользователя",
-    responses={403: {"description": "Пользователь не авторизован"}},
+    responses={401: {"description": "Пользователь не авторизован"}},
 )
 async def user_logout(response: Response, session_id=Cookie(None)):
     """Разлогин пользователя и удаление его сессии из хранилища и куков"""
@@ -82,8 +82,7 @@ async def user_logout(response: Response, session_id=Cookie(None)):
     response_model=UserResponseSchema,
     summary="Получить профиль пользователя",
     responses={
-        404: {"description": "Пользователь не найден"},
-        401: {"description": "Пользователь не залогинен"},
+        401: {"description": "Пользователь не авторизован"},
     },
 )
 async def get_user_profile(
@@ -96,7 +95,9 @@ async def get_user_profile(
     return user
 
 @router.patch("/me", summary="Обновить имя пользователя",
-              responses={401: {"description": "Пользователь не авторизован"}})
+              responses={
+                  401: {"description": "Пользователь не авторизован"}
+              })
 async def update_user_profile(
     update: UpdateUserSchema,
     user_id: UUID = Depends(get_current_user),

@@ -14,8 +14,8 @@ router = APIRouter(prefix="/projects/{project_id}/tasks", tags=["tasks"])
 @router.post("", 
              summary="Создать новую таску",
              responses={
-                401: {"description": "Пользователь не залогинен"},
-                404: {"description": "Исполняющий задание не существует в данном проекте"}
+                401: {"description": "Пользователь не авторизован"},
+                404: {"description": "Исполняющий задание не найден в этом проекте"}
             })
 async def create_task(project_id: UUID,
                       task: CreateTaskSchema,
@@ -29,7 +29,7 @@ async def create_task(project_id: UUID,
 @router.get("", 
             summary="Получить все таски в проекте",
             responses={
-                401: {"description": "Пользователь не залогинен"},
+                401: {"description": "Пользователь не авторизован"},
                 403: {"description": "Пользователь не является участником проекта"},
                 404: {"description": "Проект не был найден"}
             })
@@ -41,20 +41,24 @@ async def get_all_tasks_in_project(project_id: UUID,
     tasks = await task_serv.get_tasks_by_project_id(project_id=project_id)
     return tasks
 
-@router.get("/{task_id}", summary="Получить одну конкретную таску")
+@router.get("/{task_id}",
+            summary="Получить одну конкретную таску",
+            responses={
+                404: {"description": "Задача не была найдена"},
+            })
 async def get_task(project_id: UUID,
                    task_id: UUID,
                    session: AsyncSession = Depends(get_session),
                    _: None = Depends(CheckUserPerms(["member","owner"]))) -> TaskInfoSchema:
     task_serv = TasksService(session=session)
-    #проверяем есть ли такая таска в этом проекте. если да - возвращаем ее 
+    # проверяем есть ли такая таска в этом проекте. если да - возвращаем ее
     task = await task_serv.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)
     return task
 
 @router.delete("/{task_id}",
                summary="Удалить таску",
                responses={
-                    401: {"description": "Пользователь не залогинен"},
+                    401: {"description": "Пользователь не авторизован"},
                     403: {"description": "Пользователь не является создателем проекта"},
                     404: {"description": "Задача не была найдена"}
                 })
@@ -72,7 +76,7 @@ async def delete_task(
 
 @router.patch("/{task_id}", summary="Обновить данные в таске",
             responses={
-                401: {"description": "Пользователь не залогинен"},
+                401: {"description": "Пользователь не авторизован"},
                 403: {"description": "Пользователь не является владельцем проекта"},
                 404: {"description": "Задача не была найдена | Пользователь не был найден"}
             })

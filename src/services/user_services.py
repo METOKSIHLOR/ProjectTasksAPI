@@ -48,7 +48,7 @@ class UserServices:
         user = await self.repo.get_user_by_email(email=email)
 
         if user is None:
-            raise UserNotFoundException(user_identifier=email)
+            raise UserNotFoundException(user_cred=email)
         
         return user
 
@@ -56,7 +56,7 @@ class UserServices:
         user = await self.repo.get_user_by_id(user_id=user_id)
 
         if user is None:
-            raise UserNotFoundException(user_identifier=user_id)
+            raise UserNotFoundException(user_cred=user_id)
         
         return user
 

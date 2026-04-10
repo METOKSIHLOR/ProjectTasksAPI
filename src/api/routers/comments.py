@@ -10,8 +10,8 @@ router = APIRouter(tags=['comments'], prefix='/projects/{project_id}/tasks/{task
 
 @router.post("/comments", summary="Создать комментарий",
             responses={
-                401: {"description": "Пользователь не залогинен"},
-                404: {"description": "Задача не найдена"}
+                401: {"description": "Пользователь не авторизован"},
+                404: {"description": "Задача не была найдена"}
             })
 async def create_comment_in_task(project_id: UUID,
                          task_id: UUID,
@@ -25,7 +25,7 @@ async def create_comment_in_task(project_id: UUID,
 
 @router.get("/comments", summary="Получить комментарии задачи",
             responses={
-                401: {"description": "Пользователь не залогинен"},
+                401: {"description": "Пользователь не авторизован"},
                 403: {"description": "Пользователь не является участником проекта"},
                 404: {"description": "Задача не была найдена"},
             })
@@ -40,7 +40,7 @@ async def get_all_comments_in_task(project_id: UUID,
 
 @router.patch("/comments/{comment_id}", summary="Обновить комментарий",
             responses={
-                401: {"description": "Пользователь не залогинен"},
+                401: {"description": "Пользователь не авторизован"},
                 403: {"description": "Пользователь не является автором комментария"},
                 404: {"description": "Комментарий не был найден | Задача не была найдена"},
             })
@@ -57,7 +57,7 @@ async def update_comment(project_id: UUID,
 
 @router.delete("/comments/{comment_id}", summary="Удалить комментарий из таски",
             responses={
-                401: {"description": "Пользователь не залогинен"},
+                401: {"description": "Пользователь не авторизован"},
                 403: {"description": "Пользователь не является автором комментария"},
                 404: {"description": "Комментарий не был найден | Задача не была найдена"},
             })

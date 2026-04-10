@@ -51,7 +51,7 @@ class CommentsServices:
         )
 
         if str(comment.author_id) != str(user_id):
-            raise UserNotAuthenticatedException(user_id=user_id)
+            raise UserNotAuthenticatedException()
 
         await self.repo.update_comment(comment=comment, text=text)
         await self.repo.commit()

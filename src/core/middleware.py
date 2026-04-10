@@ -2,12 +2,19 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request
 import uuid
 from src.core.logger import logger
+from src.db.redis_storage import storage
+
 
 class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request_id = str(uuid.uuid4())
-        request.state.request_id = request_id # сохраняем в state чтоб дальше использовать в обработчиках
-        logger.info(f"[{request_id}] {request.method} {request.url}")
+        user_id = await storage.get(f"session_id:{request.cookies.get("session_id")}") or "no-user-id"
+        logger.info(f"Session cookie: {request.cookies.get("session_id")}")
+        logger.info(f"Redis returned: {user_id}")
+        # сохраняем данные в state чтоб дальше использовать в обработчиках
+        request.state.request_id = request_id
+        request.state.user_id = user_id
+        logger.info(f"[request:{request_id}] [user:{user_id}] {request.method} {request.url}")
         try:
             response = await call_next(request)
         except Exception as e:

@@ -13,7 +13,7 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 
 @router.post("", response_model=ProjectResponseSchema, summary="Создать проект",
             responses={
-                401: {"description": "Пользователь не залогинен"},
+                401: {"description": "Пользователь не авторизован"},
             })
 async def create_project(project: CreateProjectSchema,
                          session: AsyncSession = Depends(get_session),
@@ -25,7 +25,7 @@ async def create_project(project: CreateProjectSchema,
 
 @router.delete("/{project_id}", summary="Удалить проект",
             responses={
-                401: {"description": "Пользователь не залогинен"},
+                401: {"description": "Пользователь не авторизован"},
                 403: {"description": "Пользователь не является владельцем проекта"},
             })
 async def delete_project(project_id: UUID,
@@ -40,7 +40,7 @@ async def delete_project(project_id: UUID,
             summary="Получить все проекты пользователя", 
             response_model=List[ProjectResponseSchema],
             responses={
-                401: {"description": "Пользователь не залогинен"},
+                401: {"description": "Пользователь не авторизован"},
             })
 async def get_all_user_projects(user_id = Depends(get_current_user), session = Depends(get_session)) -> List[ProjectInfoSchema]:
     """Получение всех проектов конкретного пользователя по его айди, полученному из куков"""
@@ -50,7 +50,7 @@ async def get_all_user_projects(user_id = Depends(get_current_user), session = D
 
 @router.get("/{project_id}", summary="Получить данные о проекте",
             responses={
-                401: {"description": "Пользователь не залогинен"},
+                401: {"description": "Пользователь не авторизован"},
                 403: {"description": "Пользователь не является участником проекта"},
                 404: {"description": "Проект не был найден"}
             })
@@ -67,7 +67,7 @@ async def get_project_details(project_id: UUID,
 
 @router.patch("/{project_id}", summary="Обновить название проекта",
             responses={
-                401: {"description": "Пользователь не залогинен"},
+                401: {"description": "Пользователь не авторизован"},
                 403: {"description": "Пользователь не является владельцем проекта"},
                 404: {"description": "Проект не был найден"}
             })
@@ -84,10 +84,10 @@ async def update_project_name(project_id: UUID,
 
 @router.post("/{project_id}/members", summary="Добавить участника",
             responses={
-                401: {"description": "Пользователь не залогинен"},
+                401: {"description": "Пользователь не авторизован"},
                 403: {"description": "Пользователь не является владельцем проекта"},
-                404: {"description": "Проект не был найден"},
-                409: {"description": "Пользователь уже находится в проекте"}
+                404: {"description": "Проект не был найден | Пользователь не был найден"},
+                409: {"description": "Участник уже находится в проекте"}
             })
 async def add_project_member(project_id: UUID, member: ProjectMemberIdSchema,
                              session: AsyncSession = Depends(get_session),
@@ -101,7 +101,7 @@ async def add_project_member(project_id: UUID, member: ProjectMemberIdSchema,
 
 @router.delete("/{project_id}/members", summary="Удалить участника",
             responses={
-                401: {"description": "Пользователь не залогинен"},
+                401: {"description": "Пользователь не авторизован"},
                 403: {"description": "Пользователь не является владельцем проекта | Попытка удалить себя же"},
                 404: {"description": "Проект не был найден | Участник не был найден"},
             })
