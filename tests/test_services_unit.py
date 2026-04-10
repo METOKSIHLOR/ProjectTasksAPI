@@ -1,10 +1,10 @@
 import pytest
 
 from src.api.authorization.hash import hash_password
-from src.api.exceptions.comments_exceptions import CommentNotFoundException
-from src.api.exceptions.project_exceptions import ProjectDeleteConflictException, ProjectMemberNotFoundException
-from src.api.exceptions.tasks_exceptions import TaskNotFoundException
-from src.api.exceptions.users_exceptions import (
+from src.core.exceptions.comments_exceptions import CommentNotFoundException
+from src.core.exceptions.project_exceptions import ProjectDeleteConflictException, ProjectMemberNotFoundException
+from src.core.exceptions.tasks_exceptions import TaskNotFoundException
+from src.core.exceptions.users_exceptions import (
     ConflictEmailException,
     InvalidUserCredentialsException,
     UserNotAuthenticatedException,

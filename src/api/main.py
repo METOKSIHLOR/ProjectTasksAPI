@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config.config import config
+from src.core.exceptions.base_exception import BaseAPIException
+from src.core.handlers import exception_handler
+from src.core.middleware import LoggingMiddleware
 from src.db.session import connect_db, close_db
 from src.api.routers.users import router as users_router
 from src.api.routers.tasks import router as tasks_router
@@ -56,6 +59,12 @@ app.add_middleware(
     allow_methods=config.cors.methods,
     allow_headers=config.cors.headers,
 )
+
+# добавляем миддлвари
+app.add_middleware(LoggingMiddleware)
+
+# добавляем обработчики ошибок
+app.add_exception_handler(BaseAPIException, exception_handler)
 
 # добавляем роутеры
 app.include_router(users_router)

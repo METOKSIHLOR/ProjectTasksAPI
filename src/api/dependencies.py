@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import Cookie, Depends, Path
 
-from src.api.exceptions.users_exceptions import UserNotAuthorizedException, UserNotAuthenticatedException
+from src.core.exceptions.users_exceptions import UserNotAuthorizedException, UserNotAuthenticatedException
 from src.db.repositories.user_repo import UserRepository
 import src.db.session as sess
 from src.db.redis_storage import storage

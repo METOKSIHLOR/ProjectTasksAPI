@@ -1,7 +1,7 @@
 from uuid import UUID
 
 
-from src.api.exceptions.tasks_exceptions import TaskNotFoundException, AssigneeNotFoundException
+from src.core.exceptions.tasks_exceptions import TaskNotFoundException, AssigneeNotFoundException
 from src.api.schemas.tasks_schemas import (
     CreateTaskSchema,
     UpdateTaskSchema,

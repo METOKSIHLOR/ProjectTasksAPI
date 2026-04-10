@@ -5,7 +5,7 @@ from fastapi import Response
 from fastapi.params import Depends, Cookie
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.exceptions.users_exceptions import UserNotAuthorizedException
+from src.core.exceptions.users_exceptions import UserNotAuthorizedException
 from src.db.redis_storage import storage
 from src.api.dependencies import get_session, get_current_user
 from src.api.schemas.user_schemas import (

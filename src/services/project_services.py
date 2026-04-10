@@ -1,7 +1,7 @@
 from uuid import UUID
 
 
-from src.api.exceptions.project_exceptions import ProjectMemberConflictException, ProjectDeleteConflictException, \
+from src.core.exceptions.project_exceptions import ProjectMemberConflictException, ProjectDeleteConflictException, \
     ProjectMemberNotFoundException, ProjectNotFoundException
 from src.api.schemas.project_schemas import ProjectSchema
 from src.db.models import Project, ProjectMember

@@ -2,7 +2,7 @@ from typing import List
 
 
 from src.api.authorization.hash import hash_password, verify_password
-from src.api.exceptions.users_exceptions import  ConflictEmailException, InvalidUserCredentialsException, \
+from src.core.exceptions.users_exceptions import  ConflictEmailException, InvalidUserCredentialsException, \
     UserNotFoundException, UserNotAuthorizedException
 
 from src.api.schemas.user_schemas import UserRegistrationSchema, UserCredsSchema

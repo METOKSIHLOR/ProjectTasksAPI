@@ -1,8 +1,8 @@
 from uuid import UUID
 
 
-from src.api.exceptions.comments_exceptions import CommentNotFoundException
-from src.api.exceptions.users_exceptions import UserNotAuthenticatedException
+from src.core.exceptions.comments_exceptions import CommentNotFoundException
+from src.core.exceptions.users_exceptions import UserNotAuthenticatedException
 from src.services.user_services import UserServices
 from src.api.schemas.comments_schemas import CommentInfoSchema
 from src.db.models import Comment

@@ -1,24 +1,11 @@
 import uuid
 
-from fastapi import HTTPException, status
+from fastapi import status
+
+from src.core.exceptions.base_exception import BaseAPIException
 
 
-class BaseUserException(HTTPException):
-    def __init__(
-        self,
-        *,
-        status_code: int,
-        detail: str,
-        error_code: str,
-        extra_data: dict | None = None,
-        log_message: str | None = None,
-    ):
-        super().__init__(status_code=status_code, detail=detail)
-        self.error_code = error_code
-        self.extra_data = extra_data or {}
-        self.log_message = log_message or detail
-
-class ConflictEmailException(BaseUserException):
+class ConflictEmailException(BaseAPIException):
     def __init__(self, email):
         super().__init__(
             status_code=status.HTTP_409_CONFLICT,
@@ -30,7 +17,7 @@ class ConflictEmailException(BaseUserException):
             }
         )
 
-class UserNotFoundException(BaseUserException):
+class UserNotFoundException(BaseAPIException):
     def __init__(self, user_identifier: uuid.UUID | str):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -38,11 +25,11 @@ class UserNotFoundException(BaseUserException):
             error_code="USER_NOT_FOUND",
             log_message=f"User {user_identifier} not found in DB",
             extra_data={
-                "user_identifier": user_identifier,
+                "user_identifier": str(user_identifier),
             },
         )
 
-class InvalidUserCredentialsException(BaseUserException):
+class InvalidUserCredentialsException(BaseAPIException):
     def __init__(self):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -51,7 +38,7 @@ class InvalidUserCredentialsException(BaseUserException):
             log_message="User sent invalid credentials",
         )
 
-class UserNotAuthorizedException(BaseUserException):
+class UserNotAuthorizedException(BaseAPIException):
     def __init__(self):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -59,13 +46,13 @@ class UserNotAuthorizedException(BaseUserException):
             error_code="USER_NOT_AUTHORIZED",
         )
 
-class UserNotAuthenticatedException(BaseUserException):
+class UserNotAuthenticatedException(BaseAPIException):
     def __init__(self, user_id: uuid.UUID):
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User not authenticated",
             error_code="USER_NOT_AUTHENTICATED",
             extra_data={
-                "user_id": user_id
+                "user_id": str(user_id)
             }
         )
