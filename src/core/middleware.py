@@ -9,8 +9,6 @@ class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request_id = str(uuid.uuid4())
         user_id = await storage.get(f"session_id:{request.cookies.get("session_id")}") or "no-user-id"
-        logger.info(f"Session cookie: {request.cookies.get("session_id")}")
-        logger.info(f"Redis returned: {user_id}")
         # сохраняем данные в state чтоб дальше использовать в обработчиках
         request.state.request_id = request_id
         request.state.user_id = user_id
