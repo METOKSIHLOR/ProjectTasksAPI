@@ -4,8 +4,6 @@ services:
   backend:
     build: ./src
     container_name: backend
-    ports:
-      - "8000:8000"
     env_file:
       - .env
     volumes:
@@ -21,7 +19,16 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-        
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "8000:8000"   # фронт будет обращаться к API через этот порт
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+
 #  frontend:
 #     build: ./frontend
 #     container_name: frontend
@@ -36,7 +43,7 @@ services:
 #       CHOKIDAR_USEPOLLING: "true"  # важно для Linux/WSL, чтобы Vite видел изменения
 #     depends_on:
 #       - backend
-        
+
   postgres:
     image: postgres:15
     container_name: postgres
