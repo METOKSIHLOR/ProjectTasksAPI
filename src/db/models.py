@@ -25,6 +25,7 @@ class Project(Base):
     id: Mapped[uuid.UUID] = mapped_column(PGUUID, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(nullable=False)
     owner_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
     members = relationship("ProjectMember",
                            back_populates="project",

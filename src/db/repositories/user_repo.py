@@ -33,7 +33,7 @@ class UserRepository:
         stmt = (
             select(Project)
             .join(ProjectMember)
-            .where(ProjectMember.user_id == user_id).order_by(Project.id)
+            .where(ProjectMember.user_id == user_id).order_by(Project.created_at)
         )
 
         result = await self.session.execute(stmt)
