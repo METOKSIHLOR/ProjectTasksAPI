@@ -1,5 +1,6 @@
 from typing import List
 
+from fastapi.params import Cookie
 
 from src.api.authorization.hash import hash_password, verify_password
 from src.core.exceptions.users_exceptions import  ConflictEmailException, InvalidUserCredentialsException, \
@@ -31,15 +32,18 @@ class UserServices:
 
         return user
 
-    async def auth(self, schema: UserCredsSchema):
+    async def auth(self, schema: UserCredsSchema, session_id: str | None = Cookie(None)):
+        if session_id is not None: # проверяем залогинен ли пользователь в данный момент
+            await storage.delete(f"session_id:{session_id}") # если да - удаляем его текущую сессию, чтоб не копились
+
         user = await self.repo.get_user_by_email(schema.email)
 
         if user is None or not verify_password(schema.password, user.hash_password):
             raise InvalidUserCredentialsException()
 
-        session_id = str(uuid.uuid4())
+        session_id = str(uuid.uuid4()) # назначаем новую сессию
 
-        await storage.set("session_id:" + session_id, str(user.id), ex=3600)
+        await storage.set("session_id:" + session_id, str(user.id), ex=3600) # добавляем сессию в хранилище
 
         return session_id
 

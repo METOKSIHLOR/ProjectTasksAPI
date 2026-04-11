@@ -1,7 +1,7 @@
 import uuid
 from uuid import UUID
 
-from fastapi import Cookie, Depends, Path
+from fastapi import Request, Depends, Path
 
 from src.core.exceptions.users_exceptions import UserNotAuthorizedException, UserNotAuthenticatedException
 from src.db.repositories.user_repo import UserRepository
@@ -14,14 +14,11 @@ async def get_session():
     async with sess.SessionFactory() as session:
         yield session
 
-async def get_current_user(session_id = Cookie(None)):
-    """обращаемся в куки пользователя и достаем оттуда айди его сессии, из которого достаем в хранилище его айди"""
-    if session_id is None:
-        raise UserNotAuthorizedException()
+async def get_current_user(request: Request):
+    """Достаем из миддлвари айди пользователя, если он авторизирован"""
+    user_id = getattr(request.state, "user_id", None)
 
-    user_id = await storage.get(f"session_id:{session_id}") # достаем айди из редиса
-
-    if user_id is None: # если сессия в куках не совпадает с сессиями в хранилище
+    if user_id is None: # если пользователь не авторизирован
         raise UserNotAuthorizedException()
 
     return uuid.UUID(user_id)

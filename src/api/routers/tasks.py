@@ -6,7 +6,8 @@ from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import CheckUserPerms, get_current_user, get_session
-from src.api.schemas.tasks_schemas import UpdateTaskSchema, CreateTaskSchema, TaskInfoSchema
+from src.api.schemas.tasks_schemas import UpdateTaskSchema, CreateTaskSchema, TaskInfoSchema, \
+    TaskInfoSchemaWithOwnerEmail
 from src.services.tasks_services import TasksService
 
 router = APIRouter(prefix="/projects/{project_id}/tasks", tags=["tasks"])
@@ -49,7 +50,7 @@ async def get_all_tasks_in_project(project_id: UUID,
 async def get_task(project_id: UUID,
                    task_id: UUID,
                    session: AsyncSession = Depends(get_session),
-                   _: None = Depends(CheckUserPerms(["member","owner"]))) -> TaskInfoSchema:
+                   _: None = Depends(CheckUserPerms(["member","owner"]))) -> TaskInfoSchemaWithOwnerEmail:
     task_serv = TasksService(session=session)
     # проверяем есть ли такая таска в этом проекте. если да - возвращаем ее
     task = await task_serv.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)

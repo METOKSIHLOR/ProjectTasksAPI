@@ -44,6 +44,7 @@ async def user_login(
     session: AsyncSession = Depends(get_session),
 ):
     """Аутентификация пользователя через сессии и куки"""
+
     service = UserServices(session)
     """проверка входных данных пользователя и добавление айди сессии в редис в случае успеха"""
     session_id = await service.auth(user)

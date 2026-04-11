@@ -2,7 +2,8 @@ from uuid import UUID
 
 from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
-from src.db.models import Task
+from src.db.models import Task, Project
+
 
 class TasksRepository:
     def __init__(self, session):
@@ -17,7 +18,14 @@ class TasksRepository:
         return task
 
     async def get_task_by_project(self, task_id: UUID, project_id: UUID):
-        stmt = select(Task).where(and_(Task.project_id == project_id, Task.id == task_id)).options(selectinload(Task.assignee))
+        stmt = (
+            select(Task)
+            .where(and_(Task.project_id == project_id, Task.id == task_id))
+            .options(
+                selectinload(Task.assignee),  # подгружаем исполнителя
+                selectinload(Task.project).selectinload(Project.owner)  # подгружаем проект и его владельца
+            )
+        )
         task = await self.session.execute(stmt)
         return task.scalar_one_or_none()
 

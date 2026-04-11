@@ -6,7 +6,7 @@ from src.core.logger import logger
 
 async def exception_handler(request: Request, exc: BaseAPIException):
     request_id = getattr(request.state, "request_id", "no-request-id") # получаем айди запроса
-    user_id = {"user_id": getattr(request.state, "user_id")}
+    user_id = {"user_id": getattr(request.state, "user_id", "no-user-id")}
     logger.warning(f"[{request_id}] {exc.log_message}, Extra: {user_id | exc.extra_data}")
     return JSONResponse(
         status_code=exc.status_code,

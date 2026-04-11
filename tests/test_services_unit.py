@@ -43,6 +43,7 @@ async def test_user_service_register_and_auth(db_sessionmaker, monkeypatch):
         fake_storage = _FakeStorage()
         monkeypatch.setattr(storage, "set", fake_storage.set)
         monkeypatch.setattr(storage, "get", fake_storage.get)
+        monkeypatch.setattr(storage, "delete", fake_storage.delete)
 
         user = await service.register(
             UserRegistrationSchema(
@@ -60,9 +61,14 @@ async def test_user_service_register_and_auth(db_sessionmaker, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_user_service_register_duplicate_and_invalid_auth(db_sessionmaker):
+async def test_user_service_register_duplicate_and_invalid_auth(db_sessionmaker, monkeypatch):
     async with db_sessionmaker() as session:
         service = UserServices(session)
+        fake_storage = _FakeStorage()
+        monkeypatch.setattr(storage, "set", fake_storage.set)
+        monkeypatch.setattr(storage, "get", fake_storage.get)
+        monkeypatch.setattr(storage, "delete", fake_storage.delete)
+
         await service.register(
             UserRegistrationSchema(
                 name="Service User", email="dup_service@example.com", password="secret123"

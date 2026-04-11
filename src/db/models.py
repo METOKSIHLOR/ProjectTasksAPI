@@ -36,6 +36,7 @@ class Project(Base):
                          lazy="selectin",
                          cascade="all, delete-orphan",
                          passive_deletes=True)
+    owner = relationship("User", foreign_keys=[owner_id], lazy="joined")
 
 class ProjectMember(Base):
     __tablename__ = "project_members"
@@ -84,12 +85,9 @@ class Task(Base):
     def assignee_email(self):
         return self.assignee.email
 
-    @validates("status")
-    def validate_status(self, key, status):
-        allowed = get_args(AllowedTaskStatus)
-        if status not in allowed:
-            raise ValueError(f"Status must be one of {allowed}")
-        return status
+    @property
+    def project_owner_email(self) -> str:
+        return self.project.owner.email
 
 class Comment(Base):
     __tablename__ = "comments"
