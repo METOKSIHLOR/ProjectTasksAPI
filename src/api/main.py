@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.config.config import config
 from src.core.exceptions.base_exception import BaseAPIException
 from src.core.handlers import exception_handler
-from src.core.middleware import LoggingMiddleware
+from src.core.middleware import LoggingMiddleware, RateLimitMiddleware
 from src.db.session import connect_db, close_db
 from src.api.routers.users import router as users_router
 from src.api.routers.tasks import router as tasks_router
@@ -62,6 +62,7 @@ app.add_middleware(
 
 # добавляем миддлвари
 app.add_middleware(LoggingMiddleware)
+app.add_middleware(RateLimitMiddleware, limit=5, window=10)
 
 # добавляем обработчики ошибок
 app.add_exception_handler(BaseAPIException, exception_handler)

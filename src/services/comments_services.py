@@ -61,7 +61,7 @@ class CommentsServices:
         self, project_id: UUID, comment_id: UUID, task_id: UUID, user_id: UUID
     ):
         user_serv = UserServices(session=self.repo.session)
-        comment = await self.get_comment_belong_to_task(
+        comment = await self.get_comment_belong_to_task( # принадлежит ли комментарий указанной таске
             project_id=project_id, comment_id=comment_id, task_id=task_id
         )
         
