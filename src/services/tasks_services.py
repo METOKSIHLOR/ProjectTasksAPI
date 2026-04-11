@@ -37,6 +37,7 @@ class TasksService:
             )
         )
 
+        # маппим данные из вернувшейся модели для дополнительного получения почты исполнителя
         await self.repo.commit()
         return TaskInfoSchema(
             id=task.id,
@@ -47,12 +48,14 @@ class TasksService:
         )
 
     async def get_and_check_task_in_this_project(self, task_id: UUID, project_id: UUID):
-        task = await self.repo.get_task_by_project(
+        """функция проверяет, находится ли указанная таска в указанном проекте, если да - возвращает ее"""
+
+        task = await self.repo.get_task_by_project( # проверяем есть ли такая таска в проекте
             project_id=project_id, task_id=task_id
         )
 
         if task is None:
-            raise TaskNotFoundException(project_id=project_id, task_id=task_id)
+            raise TaskNotFoundException(project_id=project_id, task_id=task_id) # если нет - 404 ошибка
         
         return task
 
@@ -68,17 +71,25 @@ class TasksService:
     async def update_task(
         self, user_id: UUID, task_id: UUID, project_id: UUID, new_task: UpdateTaskSchema
     ):
+        """функция позволяет исполняющему задачу обновлять только ее статус, а владельцу проекта все поля по желанию"""
+
         #получаем таску, если она есть в этом проекте 
         task = await self.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)
 
+        # конвертим Pydantic модель в словарик
         dict_task = new_task.model_dump(exclude_none=True, exclude_unset=True)
 
+        # проверяем является ли пользователь исполнителем таски
         is_assignee = task.assignee_id == user_id
+
+        # проверяем есть ли в запросе на изменение что-то кроме статуса
         is_only_status = set(dict_task) <= {"status"}
 
         if not (is_only_status and is_assignee):
+            # если не исполнитель или обновляется не только статус - проверяем владелец проекта ли пользователь
             await self.user_serv.check_user_role(user_id=user_id, project_id=project_id, roles=["owner"])
-                        
+
+        # если владелец обновляет исполнителя задачи
         if "assignee_email" in dict_task:
             # получаем исполнителя, если он есть в этом проекте
             assignee = await self.project.find_project_member_by_email(
@@ -90,6 +101,7 @@ class TasksService:
                                                 task_id=task.id,
                                                 assignee_id=dict_task["assignee_email"])
 
+            # добавляем айди исполнителя в словарик и убираем оттуда его почту, для обновления она не нужна
             dict_task["assignee_id"] = assignee.user_id
             del dict_task["assignee_email"]
 

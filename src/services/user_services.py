@@ -18,13 +18,13 @@ class UserServices:
         self.repo = UserRepository(session)
 
     async def register(self, schema: UserRegistrationSchema):
-        hash_pw = hash_password(schema.password)
+        hash_pw = hash_password(schema.password) # хешируем пароль юзера
         model = User(name=schema.name, email=schema.email, hash_password=hash_pw)
 
-        email_exast = await self.repo.get_user_by_email(email=schema.email)
+        email_exist = await self.repo.get_user_by_email(email=schema.email) # проверяем существует ли уже такая почта в бд
 
-        if email_exast is not None:
-             raise ConflictEmailException(email=schema.email)
+        if email_exist is not None:
+             raise ConflictEmailException(email=schema.email) # если существует - кидаем 409 ошибку
         
         user = await self.repo.create_user(model)
 
@@ -38,6 +38,7 @@ class UserServices:
 
         user = await self.repo.get_user_by_email(schema.email)
 
+        # если почта не найдена в бд или неверный пароль
         if user is None or not verify_password(schema.password, user.hash_password):
             raise InvalidUserCredentialsException()
 
@@ -76,6 +77,7 @@ class UserServices:
         return projects
 
     async def check_user_role(self, user_id, project_id, roles: List[str]):
-        if not await self.repo.check_user_role(user_id=user_id, project_id=project_id, roles=roles):  # проверяем соответствие роли пользователя
+        # проверяем соответствие роли пользователя
+        if not await self.repo.check_user_role(user_id=user_id, project_id=project_id, roles=roles):
             raise UserNotAuthorizedException()
 

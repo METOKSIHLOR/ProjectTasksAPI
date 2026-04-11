@@ -36,6 +36,7 @@ class ProjectServices:
         return project
 
     async def get_project_member_by_id(self, project_id: UUID, member_id: UUID):
+        """фцнкция возвращает участника проекта, если таковой присутствует, в противном случае 404 статус"""
         member = await self.repo.get_project_member(project_id=project_id, member_id=member_id)
 
         if member is None:
@@ -44,6 +45,7 @@ class ProjectServices:
         return member
     
     async def find_project_member_by_email(self, project_id: UUID, member_email):
+        """функция возвращает булевое значение без ошибок, есть ли данный участник с такой почтой в проекте"""
         user = await self.user_serv.get_user_by_email(member_email)
         return await self.repo.get_project_member(
             project_id=project_id,
@@ -51,10 +53,12 @@ class ProjectServices:
         )
 
     async def add_member(self, member_email, project_id: UUID):
+        """функция добавляет участника в проект"""
         project = await self.get_project_by_id(project_id=project_id)
         
         member = await self.user_serv.get_user_by_email(member_email)
 
+        # проверяем находится ли в данный момент такой участник в проекте
         existing = await self.repo.get_project_member(
             project_id=project.id,
             member_id=member.id
@@ -73,10 +77,10 @@ class ProjectServices:
     async def remove_member(self, project_id: UUID, member_email, user_id: UUID):
         member = await self.user_serv.get_user_by_email(email=member_email) # Получаем обьект пользователя по его почте
 
-        if str(member.id) == str(user_id):
+        if str(member.id) == str(user_id): # проверяем не пытается ли юзер удалить себя же
             raise ProjectDeleteConflictException(project_id=project_id, member_id=member.id)
-
-        project_member = await self.repo.get_project_member(project_id=project_id, member_id=member.id) # проверяем является ли пользователь участником проекта
+        # проверяем является ли удаляемый пользватель участником проекта
+        project_member = await self.repo.get_project_member(project_id=project_id, member_id=member.id)
 
         if project_member is None:
             raise ProjectMemberNotFoundException(project_id=project_id, member_id=member.id)

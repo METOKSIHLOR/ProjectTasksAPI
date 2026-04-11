@@ -26,13 +26,15 @@ class CommentsServices:
         return comment
 
     async def get_comments(self, project_id: UUID, task_id: UUID):
+        """функция возвращает все комментарии в таске"""
+
         #проверяем есть ли такая таска в проекте вообще
         await self.tasks_service.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)
 
-        #возвращаем список комментов
+        # возвращаем список комментов
         comments = await self.repo.get_comments(task_id=task_id)
 
-        #маппим модели и получаем дополнительные поля
+        # маппим модели и получаем дополнительные поля
         return [
             CommentInfoSchema(
                 id=comment.id,
@@ -46,10 +48,12 @@ class CommentsServices:
     async def update_comment(
         self, project_id: UUID, comment_id: UUID, task_id: UUID, user_id: UUID, text: str
     ):
+        # проверяем находится ли такой комментарий в указанной задаче
         comment = await self.get_comment_belong_to_task(
             project_id=project_id, comment_id=comment_id, task_id=task_id
         )
 
+        # если пользователь не является автором комментария
         if str(comment.author_id) != str(user_id):
             raise UserNotAuthenticatedException()
 
@@ -77,12 +81,14 @@ class CommentsServices:
     async def get_comment_belong_to_task(
         self, comment_id: UUID, task_id: UUID, project_id: UUID
     ):
+        """Функция проверяет, находится ли такой комментарий в таске"""
         await self.tasks_service.get_and_check_task_in_this_project(
             task_id=task_id, project_id=project_id
         )
         comment = await self.repo.get_comment_in_task(
             comment_id=comment_id, task_id=task_id
         )
+
         if comment is None:
             raise CommentNotFoundException(project_id=project_id, task_id=task_id, comment_id=comment_id)
 
