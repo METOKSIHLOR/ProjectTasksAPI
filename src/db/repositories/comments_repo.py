@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from httpx import options
 from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 from src.db.models import Comment
@@ -15,7 +16,10 @@ class CommentsRepository:
         return comment
 
     async def get_comments(self, task_id: UUID):
-        stmt = select(Comment).where(and_(Comment.task_id == task_id, Comment.is_deleted == False)).options(selectinload(Comment.author)).order_by(Comment.created_at)
+        stmt = (select(Comment).where(and_(Comment.task_id == task_id, Comment.is_deleted == False))
+                .options(selectinload(Comment.author), selectinload(Comment.replies))
+                .order_by(Comment.created_at))
+
         comments = await self.session.execute(stmt)
         return comments.scalars().all()
 
@@ -25,7 +29,9 @@ class CommentsRepository:
         return comment.scalar_one_or_none()
 
     async def get_comment_in_task(self, comment_id: UUID, task_id: UUID):
-        stmt = select(Comment).where(and_(Comment.task_id == task_id, Comment.id == comment_id, Comment.is_deleted == False))
+        stmt = (select(Comment)
+                .where(and_(Comment.task_id == task_id, Comment.id == comment_id, Comment.is_deleted == False))
+                .options(selectinload(Comment.replies)))
         comment = await self.session.execute(stmt)
         return comment.scalar_one_or_none()
 
@@ -36,6 +42,10 @@ class CommentsRepository:
 
     async def delete_comment(self, comment: Comment):
         comment.is_deleted = True
+
+        for reply in comment.replies:
+            reply.is_reply_deleted = True
+
         await self.session.flush()
         return comment
 

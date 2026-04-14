@@ -172,7 +172,7 @@ async def test_comments_service_forbidden_update_and_not_found(db_sessionmaker):
             project_id=project.id,
             task_id=task.id,
             author_id=owner.id,
-            text=CreateCommentSchema(text="comment").text,
+            comment=CreateCommentSchema(text="Comment", replied_to=None),
         )
 
         with pytest.raises(UserNotAuthenticatedException):

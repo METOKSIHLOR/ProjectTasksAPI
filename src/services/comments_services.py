@@ -22,8 +22,9 @@ class CommentsServices:
         await self.tasks_service.get_and_check_task_in_this_project(project_id=project_id, task_id=task_id)
         comment = Comment(task_id=task_id, author_id=author_id, text=comment.text, replied_to=comment.replied_to)
 
-        # проверяем существует ли такой комментарий в таске, чтоб на него отвечать
-        await self.get_comment_belong_to_task(project_id=project_id, task_id=task_id, comment_id=comment.replied_to)
+        if comment.replied_to is not None:
+            # проверяем существует ли такой комментарий в таске, чтоб на него отвечать
+            await self.get_comment_belong_to_task(project_id=project_id, task_id=task_id, comment_id=comment.replied_to)
 
         await self.repo.create_comment(comment)
 
@@ -47,7 +48,7 @@ class CommentsServices:
                 text=comment.text,
                 author_email=comment.author.email,
                 author_name=comment.author.name,
-                replied_to=comment.replied_to,
+                replied_to=comment.replied_to if not comment.is_reply_deleted else "deleted",
             )
             for comment in comments
         ]

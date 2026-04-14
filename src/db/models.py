@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Literal, get_args
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import DeclarativeBase, Mapped, validates, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, validates, mapped_column, relationship, backref
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 import uuid
 
@@ -111,10 +111,17 @@ class Comment(Base):
     text: Mapped[str] = mapped_column(nullable=False)
     is_deleted: Mapped[bool] = mapped_column(default=False, nullable=False)
     replied_to: Mapped[uuid.UUID] = mapped_column(ForeignKey("comments.id"), default=None, nullable=True)
+    is_reply_deleted: Mapped[bool] = mapped_column(default=False, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
     task = relationship("Task", back_populates="comments")
     author = relationship("User")
+    replies = relationship(
+        "Comment",
+        backref=backref("parent", remote_side=[id]),
+        lazy="selectin"
+    )
+
     @property
     def author_name(self):
         return self.author.name 

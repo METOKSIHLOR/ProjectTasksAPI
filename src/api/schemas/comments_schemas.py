@@ -1,6 +1,7 @@
 import uuid
 from uuid import UUID
 
+from typing import Literal
 from pydantic import BaseModel, EmailStr, Field
 
 class CommentSchema(BaseModel):
@@ -24,7 +25,7 @@ class CommentInfoSchema(CommentSchema):
     author_email: EmailStr = Field(title="Почта автора комментария",
                                    examples=["metoks@gmail.com"])
 
-    replied_to: uuid.UUID | None = Field(None, title="Айди реплая",
+    replied_to: uuid.UUID | Literal["deleted"] | None = Field(None, title="Айди реплая",
                                 description="Айди комментария, на который отвечает юзер (опционально)",)
 
 
