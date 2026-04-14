@@ -1,0 +1,47 @@
+:root {
+
+    /* layout */
+    --layout-width: 1200px;
+
+    /* typography */
+    --font-size-base: 14px;
+    --font-size-title: 20px;
+
+    /* primary color system (HSL) */
+    --color-primary-h: 160;
+    --color-primary-s: 55%;
+    --color-primary-l: 52%;
+
+    --color-primary: hsl(
+            var(--color-primary-h),
+            var(--color-primary-s),
+            var(--color-primary-l)
+    );
+
+    --color-primary-dark: hsl(
+            var(--color-primary-h),
+            var(--color-primary-s),
+            calc(var(--color-primary-l) - 10%)
+    );
+
+    --color-primary-light: hsl(
+            var(--color-primary-h),
+            var(--color-primary-s),
+            calc(var(--color-primary-l) + 35%)
+    );
+
+    /* LIGHT THEME */
+    --color-bg: #ffffff;
+    --color-text: #333;
+    --color-card: #ffffff;
+    --color-border: #e0e0e0;
+}
+
+[data-theme="dark"] {
+
+    --color-bg: #1e1e1e;
+    --color-text: #e4e4e4;
+    --color-card: #2a2a2a;
+    --color-border: #3a3a3a;
+
+}

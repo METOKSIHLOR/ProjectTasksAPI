@@ -62,14 +62,14 @@ class UpdateTaskSchema(TaskSchema):
     @classmethod
     def validate_title(cls, value):
         if value is not None and not (1 < len(value) <= 25):
-            raise ValueError("Длина названия должна быть от 1 до 25 символов")
+            raise ValueError("The title length must be between 1 and 25 characters")
         return value
     
     @field_validator("description")
     @classmethod
     def validate_description(cls, value):
         if value is not None and not (1 < len(value) <= 200):
-            raise ValueError("Длина описания должна быть от 1 до 200 символов")
+            raise ValueError("The description length must be from 1 to 200 characters")
         return value
     
 

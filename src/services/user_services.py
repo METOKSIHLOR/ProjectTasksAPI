@@ -1,13 +1,13 @@
 from typing import List
-
 from fastapi.params import Cookie
 
 from src.api.authorization.hash import hash_password, verify_password
 from src.core.exceptions.users_exceptions import  ConflictEmailException, InvalidUserCredentialsException, \
     UserNotFoundException, UserNotAuthorizedException
 
-from src.api.schemas.user_schemas import UserRegistrationSchema, UserCredsSchema
-from src.db.models import User
+from src.api.schemas.user_schemas import UserRegistrationSchema, UserCredsSchema, UpdateUserSettingsSchema, \
+    UserSettingsResponseSchema
+from src.db.models import User, UserSettings
 from src.db.redis_storage import storage
 from src.db.repositories.user_repo import UserRepository
 import uuid
@@ -19,7 +19,7 @@ class UserServices:
 
     async def register(self, schema: UserRegistrationSchema):
         hash_pw = hash_password(schema.password) # хешируем пароль юзера
-        model = User(name=schema.name, email=schema.email, hash_password=hash_pw)
+        model = User(name=schema.name, email=schema.email, hash_password=hash_pw, settings=UserSettings(settings={}))
 
         email_exist = await self.repo.get_user_by_email(email=schema.email) # проверяем существует ли уже такая почта в бд
 
@@ -75,6 +75,17 @@ class UserServices:
     async def get_user_projects(self, user_id: UUID):
         projects = await self.repo.get_user_projects(user_id)
         return projects
+
+    async def get_user_settings(self, user_id: UUID):
+        user = await self.get_user_by_id(user_id=user_id)
+        settings = user.settings.settings if user.settings else {}
+        return UserSettingsResponseSchema(settings=settings)
+
+    async def update_user_settings(self, user_id: UUID, new_settings: UpdateUserSettingsSchema):
+        user = await self.get_user_by_id(user_id=user_id)
+        await self.repo.update_user_settings(user=user, settings=new_settings)
+        await self.repo.commit()
+        return user.settings.settings
 
     async def check_user_role(self, user_id, project_id, roles: List[str]):
         # проверяем соответствие роли пользователя

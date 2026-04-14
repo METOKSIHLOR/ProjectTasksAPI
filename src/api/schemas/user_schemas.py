@@ -1,6 +1,9 @@
 from pydantic import Field
 from pydantic import BaseModel, EmailStr
 
+from src.db.models import UserSettings
+
+
 class UserCredsSchema(BaseModel):
     """Схема с минмальными необходимым данными для авторизации пользователя, логином и паролем"""
     email: EmailStr = Field(title="Почта пользователя",
@@ -34,4 +37,15 @@ class UserResponseSchema(BaseModel):
     email: EmailStr = Field(title="Почта пользователя",
                             description="Принимается любая почта, которая содержит @",
                             examples=["metoks@gmail.com", "trap@abcde.ru"],)
+
+class UserSettingsSchema(BaseModel):
+    settings: dict = Field(title="Настройки пользователя",
+                           description="Здесь находятся все настройки пользователя в JSON формате",
+                           examples=[{}],)
+
+class UserSettingsResponseSchema(UserSettingsSchema):
+    pass
+
+class UpdateUserSettingsSchema(UserSettingsSchema):
+    pass
 

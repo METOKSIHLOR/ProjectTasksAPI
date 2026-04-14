@@ -3,8 +3,10 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
+from sqlalchemy.orm import selectinload
 
-from src.db.models import User, Project, ProjectMember
+from src.api.schemas.user_schemas import UpdateUserSettingsSchema
+from src.db.models import User, Project, ProjectMember, UserSettings
 
 
 class UserRepository:
@@ -21,8 +23,15 @@ class UserRepository:
         await self.session.flush()
         return user
 
+    async def update_user_settings(self, user: User, settings: UpdateUserSettingsSchema):
+        user.settings.settings = settings.model_dump()
+
+        self.session.add(user.settings)
+        await self.session.refresh(user)
+        return user
+
     async def get_user_by_id(self, user_id: UUID):
-        user = await self.session.execute(select(User).where(User.id == user_id))
+        user = await self.session.execute(select(User).where(User.id == user_id).options(selectinload(User.settings)))
         return user.scalar_one_or_none()
 
     async def get_user_by_email(self, email):

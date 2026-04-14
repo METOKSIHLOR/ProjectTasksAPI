@@ -11,7 +11,7 @@ from src.api.dependencies import get_session, get_current_user
 from src.api.schemas.user_schemas import (
     UserRegistrationSchema,
     UserResponseSchema,
-    UserCredsSchema, UpdateUserSchema,
+    UserCredsSchema, UpdateUserSchema, UserSettingsResponseSchema, UpdateUserSettingsSchema,
 )
 from src.services.user_services import UserServices
 
@@ -108,3 +108,19 @@ async def update_user_profile(
     service = UserServices(session)
     await service.update_user_name(user_id=user_id, new_name=update.name)
     return {"success": True}
+
+@router.get("/settings", summary="Получение настроек пользователя",)
+async def get_settings(user_id: UUID = Depends(get_current_user), session: AsyncSession = Depends(get_session)) -> UserSettingsResponseSchema:
+    """Ручка получает все настройки пользователя. Пока что без валидации, все необходимые настройки обозначает и валидирует фронт"""
+    service = UserServices(session)
+    settings = await service.get_user_settings(user_id=user_id)
+    return settings
+
+@router.put("/settings", summary="Обновить настройки пользователя",)
+async def update_user_settings(new_settings: UpdateUserSettingsSchema,
+                               user_id: UUID = Depends(get_current_user),
+                               session: AsyncSession = Depends(get_session),
+                               ) -> UserSettingsResponseSchema:
+    service = UserServices(session)
+    settings = await service.update_user_settings(user_id=user_id, new_settings=new_settings)
+    return settings
