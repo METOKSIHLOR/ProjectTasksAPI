@@ -109,6 +109,8 @@ class Comment(Base):
     task_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False,)
     author_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("users.id"), nullable=False)
     text: Mapped[str] = mapped_column(nullable=False)
+    is_deleted: Mapped[bool] = mapped_column(default=False, nullable=False)
+    replied_to: Mapped[uuid.UUID] = mapped_column(ForeignKey("comments.id"), default=None, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
     task = relationship("Task", back_populates="comments")

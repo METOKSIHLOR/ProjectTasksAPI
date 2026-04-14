@@ -15,17 +15,17 @@ class CommentsRepository:
         return comment
 
     async def get_comments(self, task_id: UUID):
-        stmt = select(Comment).where(Comment.task_id == task_id).options(selectinload(Comment.author)).order_by(Comment.created_at)
+        stmt = select(Comment).where(and_(Comment.task_id == task_id, Comment.is_deleted == False)).options(selectinload(Comment.author)).order_by(Comment.created_at)
         comments = await self.session.execute(stmt)
         return comments.scalars().all()
 
     async def get_comment_by_id(self, comment_id: UUID):
-        stmt = select(Comment).where(Comment.id == comment_id)
+        stmt = select(Comment).where(and_(Comment.id == comment_id, Comment.is_deleted == False))
         comment = await self.session.execute(stmt)
         return comment.scalar_one_or_none()
 
     async def get_comment_in_task(self, comment_id: UUID, task_id: UUID):
-        stmt = select(Comment).where(and_(Comment.task_id == task_id, Comment.id == comment_id))
+        stmt = select(Comment).where(and_(Comment.task_id == task_id, Comment.id == comment_id, Comment.is_deleted == False))
         comment = await self.session.execute(stmt)
         return comment.scalar_one_or_none()
 
@@ -35,7 +35,7 @@ class CommentsRepository:
         return comment
 
     async def delete_comment(self, comment: Comment):
-        await self.session.delete(comment)
+        comment.is_deleted = True
         await self.session.flush()
         return comment
 

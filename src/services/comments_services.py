@@ -1,10 +1,11 @@
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
 
 from src.core.exceptions.comments_exceptions import CommentNotFoundException
 from src.core.exceptions.users_exceptions import UserNotAuthenticatedException
 from src.services.user_services import UserServices
-from src.api.schemas.comments_schemas import CommentInfoSchema
+from src.api.schemas.comments_schemas import CommentInfoSchema, CreateCommentSchema
 from src.db.models import Comment
 from src.db.repositories.comments_repo import CommentsRepository
 from src.services.tasks_services import TasksService
@@ -16,11 +17,16 @@ class CommentsServices:
         self.tasks_service = TasksService(session)
 
     async def create_comment(
-        self, project_id: UUID, task_id: UUID, author_id: UUID, text: str
+        self, project_id: UUID, task_id: UUID, author_id: UUID, comment: CreateCommentSchema,
     ):
         await self.tasks_service.get_and_check_task_in_this_project(project_id=project_id, task_id=task_id)
-        comment = Comment(task_id=task_id, author_id=author_id, text=text)
+        comment = Comment(task_id=task_id, author_id=author_id, text=comment.text, replied_to=comment.replied_to)
+
+        # проверяем существует ли такой комментарий в таске, чтоб на него отвечать
+        await self.get_comment_belong_to_task(project_id=project_id, task_id=task_id, comment_id=comment.replied_to)
+
         await self.repo.create_comment(comment)
+
         await self.repo.commit()
         await self.repo.session.refresh(comment, attribute_names=["author"])
         return comment
@@ -41,6 +47,7 @@ class CommentsServices:
                 text=comment.text,
                 author_email=comment.author.email,
                 author_name=comment.author.name,
+                replied_to=comment.replied_to,
             )
             for comment in comments
         ]

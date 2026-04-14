@@ -20,7 +20,8 @@ class UserRepository:
 
     async def update_user_profile(self, user: User, new_details: dict):
         for key, value in new_details.items():
-            setattr(user, key, value)
+            if value is not None:
+                setattr(user, key, value)
 
         await self.session.flush()
         return user

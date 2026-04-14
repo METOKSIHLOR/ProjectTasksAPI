@@ -23,10 +23,10 @@ class UserRegistrationSchema(UserCredsSchema):
 
 class UpdateUserSchema(BaseModel):
     """Схема для обновления имени пользователя"""
-    name: str | None = Field(min_length=3, title="Имя пользователя",
+    name: str | None = Field(None, min_length=3, title="Имя пользователя",
                       description="Не меньше 3 символов",
                       examples=["METOKS", "Antooooooon"])
-    email: EmailStr | None = Field(title="Почта пользователя",
+    email: EmailStr | None = Field(None, title="Почта пользователя",
                             description="Принимается любая почта, которая содержит @",
                             examples=["metoks@gmail.com", "trap@abcde.ru"],)
 
