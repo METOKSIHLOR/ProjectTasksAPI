@@ -18,8 +18,10 @@ class UserRepository:
         await self.session.flush()
         return user
 
-    async def update_user_name(self, user: User, new_name: str):
-        user.name = new_name
+    async def update_user_profile(self, user: User, new_details: dict):
+        for key, value in new_details.items():
+            setattr(user, key, value)
+
         await self.session.flush()
         return user
 

@@ -95,18 +95,19 @@ async def get_user_profile(
     user = await service.get_user_by_id(user_id=user_id)  # получаем юзера
     return user
 
-@router.patch("/me", summary="Обновить имя пользователя",
+@router.patch("/me", summary="Обновить данные пользователя",
               responses={
-                  401: {"description": "Пользователь не авторизован"}
+                  401: {"description": "Пользователь не авторизован"},
+                  409: {"description": "Такая почта уже занята"}
               })
 async def update_user_profile(
     update: UpdateUserSchema,
     user_id: UUID = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """Обновляет пока что только никнейм"""
+    """Обновляет пока что только никнейм и почту"""
     service = UserServices(session)
-    await service.update_user_name(user_id=user_id, new_name=update.name)
+    await service.update_user_profile(user_id=user_id, new_details=update)
     return {"success": True}
 
 @router.get("/settings", summary="Получение настроек пользователя",)

@@ -30,7 +30,7 @@ async def test_user_repository_crud_and_roles(db_sessionmaker):
 
         loaded_owner = await user_repo.get_user_by_id(owner.id)
         by_email = await user_repo.get_user_by_email("owner_repo@example.com")
-        await user_repo.update_user_name(loaded_owner, "Owner Repo Updated")
+        await user_repo.update_user_profile(loaded_owner, "Owner Repo Updated")
         await user_repo.commit()
 
         projects = await user_repo.get_user_projects(owner.id)

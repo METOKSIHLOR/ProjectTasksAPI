@@ -6,7 +6,7 @@ from src.core.exceptions.users_exceptions import  ConflictEmailException, Invali
     UserNotFoundException, UserNotAuthorizedException
 
 from src.api.schemas.user_schemas import UserRegistrationSchema, UserCredsSchema, UpdateUserSettingsSchema, \
-    UserSettingsResponseSchema
+    UserSettingsResponseSchema, UpdateUserSchema
 from src.db.models import User, UserSettings
 from src.db.redis_storage import storage
 from src.db.repositories.user_repo import UserRepository
@@ -65,10 +65,15 @@ class UserServices:
         
         return user
 
-    async def update_user_name(self, user_id: UUID, new_name: str):
+    async def update_user_profile(self, user_id: UUID, new_details: UpdateUserSchema):
+        if new_details.email is not None:
+            existing_user = await self.repo.get_user_by_email(email=new_details.email)
+            if existing_user:
+                raise ConflictEmailException(email=new_details.email)
+
         user = await self.repo.get_user_by_id(user_id=user_id)
 
-        await self.repo.update_user_name(user=user, new_name=new_name)
+        await self.repo.update_user_profile(user=user, new_details=new_details.model_dump())
 
         await self.repo.commit()
 
