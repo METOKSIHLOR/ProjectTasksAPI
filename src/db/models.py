@@ -7,6 +7,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, validates, mapped_column, re
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 import uuid
 
+from sqlalchemy.types import JSON
+
 AllowedTaskStatus = Literal["todo", "in_progress", "done"]
 AllowedRoles = Literal['owner', 'member']
 class Base(DeclarativeBase):
@@ -26,7 +28,7 @@ class UserSettings(Base):
     __tablename__ = "user_settings"
     id: Mapped[uuid.UUID] = mapped_column(PGUUID, primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("users.id"))
-    settings: Mapped[dict] = mapped_column(JSONB, default=lambda: {}, nullable=False)
+    settings: Mapped[dict] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=lambda: {}, nullable=False)
 
     user = relationship("User", back_populates="settings")
 
