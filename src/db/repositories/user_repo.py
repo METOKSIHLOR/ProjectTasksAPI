@@ -26,10 +26,8 @@ class UserRepository:
         await self.session.flush()
         return user
 
-    async def update_user_settings(self, user: User, settings: UpdateUserSettingsSchema):
-        user.settings.settings = settings.model_dump()
-
-        self.session.add(user.settings)
+    async def update_user_settings(self, user: User, new_data: dict):
+        user.settings.settings = new_data["settings"]
         await self.session.refresh(user)
         return user
 

@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, List
 from pydantic import Field
 from pydantic import BaseModel, EmailStr
 
@@ -44,7 +44,10 @@ class UserResponseSchema(BaseModel):
 class UserSettingsSchema(BaseModel):
     settings: dict = Field(title="Настройки пользователя",
                            description="Здесь находятся все настройки пользователя в JSON формате",
-                           examples=[{}],)
+                           examples=[{}], )
+
+class UserResponseWithSettingsSchema(UserResponseSchema):
+    settings: dict = Field(title="Настройки пользователя",)
 
 class UserSettingsResponseSchema(UserSettingsSchema):
     pass

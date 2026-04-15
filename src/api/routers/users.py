@@ -13,7 +13,7 @@ from src.api.schemas.user_schemas import (
     UserRegistrationSchema,
     UserResponseSchema,
     UserCredsSchema, UpdateUserSchema, UserSettingsResponseSchema, UpdateUserSettingsSchema, UserInvitesInfoSchema,
-    UserInvitesUpdateSchema,
+    UserInvitesUpdateSchema, UserResponseWithSettingsSchema,
 )
 from src.services.user_services import UserServices
 
@@ -82,7 +82,6 @@ async def user_logout(response: Response, session_id=Cookie(None)):
 
 @router.get(
     "/me",
-    response_model=UserResponseSchema,
     summary="Получить профиль пользователя",
     responses={
         401: {"description": "Пользователь не авторизован"},
@@ -91,11 +90,11 @@ async def user_logout(response: Response, session_id=Cookie(None)):
 async def get_user_profile(
     user_id: UUID = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> UserResponseWithSettingsSchema:
     """Пользователь получает данные о своем аккаунте, который определяется по номеру его сессии в куках"""
     service = UserServices(session)
     user = await service.get_user_by_id(user_id=user_id)  # получаем юзера
-    return user
+    return UserResponseWithSettingsSchema(name=user.name, email=user.email, settings=user.settings.settings)
 
 @router.get("/invites",
             summary="Получение приглашений пользователя",
@@ -139,13 +138,6 @@ async def update_user_profile(
     service = UserServices(session)
     await service.update_user_profile(user_id=user_id, new_details=update)
     return {"success": True}
-
-@router.get("/settings", summary="Получение настроек пользователя",)
-async def get_settings(user_id: UUID = Depends(get_current_user), session: AsyncSession = Depends(get_session)) -> UserSettingsResponseSchema:
-    """Ручка получает все настройки пользователя. Пока что без валидации, все необходимые настройки обозначает и валидирует фронт"""
-    service = UserServices(session)
-    settings = await service.get_user_settings(user_id=user_id)
-    return settings
 
 @router.put("/settings", summary="Обновить настройки пользователя",)
 async def update_user_settings(new_settings: UpdateUserSettingsSchema,

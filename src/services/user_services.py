@@ -123,14 +123,14 @@ class UserServices:
 
     async def get_user_settings(self, user_id: UUID):
         user = await self.get_user_by_id(user_id=user_id)
-        settings = user.settings.settings if user.settings else {}
+        settings = user.settings.settings
         return UserSettingsResponseSchema(settings=settings)
 
     async def update_user_settings(self, user_id: UUID, new_settings: UpdateUserSettingsSchema):
         user = await self.get_user_by_id(user_id=user_id)
-        await self.repo.update_user_settings(user=user, settings=new_settings)
+        await self.repo.update_user_settings(user=user, new_data=new_settings.model_dump())
         await self.repo.commit()
-        return user.settings.settings
+        return UserSettingsResponseSchema(settings=user.settings.settings)
 
     async def check_user_role(self, user_id, project_id, roles: List[str]):
         # проверяем соответствие роли пользователя

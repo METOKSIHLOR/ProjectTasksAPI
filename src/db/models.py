@@ -27,7 +27,7 @@ class UserSettings(Base):
     __tablename__ = "user_settings"
     id: Mapped[uuid.UUID] = mapped_column(PGUUID, primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("users.id"))
-    settings: Mapped[dict] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=lambda: {}, nullable=False)
+    settings: Mapped[dict] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=False)
 
     user = relationship("User", back_populates="settings")
 
