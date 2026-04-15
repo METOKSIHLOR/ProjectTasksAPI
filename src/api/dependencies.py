@@ -6,7 +6,6 @@ from fastapi import Request, Depends, Path
 from src.core.exceptions.users_exceptions import UserNotAuthorizedException, UserNotAuthenticatedException
 from src.db.repositories.user_repo import UserRepository
 import src.db.session as sess
-from src.db.redis_storage import storage
 
 
 async def get_session():

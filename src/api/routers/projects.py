@@ -82,20 +82,20 @@ async def update_project_name(project_id: UUID,
     return {"success": True}
 
 
-@router.post("/{project_id}/members", summary="Добавить участника",
+@router.post("/{project_id}/members", summary="Отправить участнику приглашение в проект",
             responses={
                 401: {"description": "Пользователь не авторизован"},
                 403: {"description": "Пользователь не является владельцем проекта"},
                 404: {"description": "Проект не был найден | Пользователь не был найден"},
-                409: {"description": "Участник уже находится в проекте"}
+                409: {"description": "Участник уже находится в проекте | Участник уже был приглашен"}
             })
-async def add_project_member(project_id: UUID, member: ProjectMemberIdSchema,
+async def add_member_invite(project_id: UUID, member: ProjectMemberIdSchema,
                              session: AsyncSession = Depends(get_session),
                              _: None = Depends(CheckUserPerms(["owner"]))):
-    """Добавление в указанную группу нового участника, если пользователь является владельцем"""
+    """Приглашение участника в группу, если пользователь является владельцем"""
     service = ProjectServices(session)
 
-    await service.add_member(member_email=member.email, project_id=project_id)
+    await service.send_member_invite(member_email=member.email, project_id=project_id)
 
     return {"success": True}
 

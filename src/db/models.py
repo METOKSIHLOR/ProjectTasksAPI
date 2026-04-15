@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 from typing import Literal, get_args
 
@@ -31,6 +30,16 @@ class UserSettings(Base):
     settings: Mapped[dict] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=lambda: {}, nullable=False)
 
     user = relationship("User", back_populates="settings")
+
+class UserInvite(Base):
+    __tablename__ = "user_invites"
+
+    id: Mapped[uuid.UUID] = mapped_column(PGUUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("users.id"))
+    project_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("projects.id"))
+    status: Mapped[Literal["accepted", "denied", "waiting"]] = mapped_column(nullable=True, default='waiting')
+
+    project = relationship("Project")
 
 class Project(Base):
     __tablename__ = "projects"

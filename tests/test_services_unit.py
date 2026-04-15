@@ -155,7 +155,7 @@ async def test_comments_service_forbidden_update_and_not_found(db_sessionmaker):
 
         project_service = ProjectServices(session)
         project = await project_service.create_new_project(CreateProjectSchema(name="Comments service"), owner.id)
-        await project_service.add_member(member_email=member.email, project_id=project.id)
+        await project_service.send_member_invite(member_email=member.email, project_id=project.id)
 
         tasks_service = TasksService(session)
         task = await tasks_service.create_task(
@@ -205,7 +205,7 @@ async def test_tasks_service_owner_can_update_assignee(db_sessionmaker):
 
         project_service = ProjectServices(session)
         project = await project_service.create_new_project(CreateProjectSchema(name="Update service"), owner.id)
-        await project_service.add_member(member_email=member.email, project_id=project.id)
+        await project_service.send_member_invite(member_email=member.email, project_id=project.id)
 
         tasks_service = TasksService(session)
         task = await tasks_service.create_task(

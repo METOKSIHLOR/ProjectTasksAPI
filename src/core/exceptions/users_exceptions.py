@@ -53,3 +53,27 @@ class UserNotAuthenticatedException(BaseAPIException):
             detail="User not authenticated",
             error_code="USER_NOT_AUTHENTICATED",
         )
+
+class UserInviteNotFoundException(BaseAPIException):
+    def __init__(self, user_cred: uuid.UUID | str, invite_id: uuid.UUID):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User invite not found",
+            error_code="USER_INVITE_NOT_FOUND",
+            extra_data={
+                "user_credential": str(user_cred),
+                "invite_id": str(invite_id)
+            },
+        )
+
+class ConflictInviteException(BaseAPIException):
+    def __init__(self, member_id: uuid.UUID):
+        super().__init__(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User already invited",
+            error_code="INVITE_ALREADY_EXISTS",
+            log_message="Invite conflict",
+            extra_data={
+                "member_id": str(member_id)
+            }
+        )

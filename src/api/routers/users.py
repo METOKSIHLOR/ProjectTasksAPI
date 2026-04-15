@@ -1,3 +1,4 @@
+from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter
@@ -11,7 +12,8 @@ from src.api.dependencies import get_session, get_current_user
 from src.api.schemas.user_schemas import (
     UserRegistrationSchema,
     UserResponseSchema,
-    UserCredsSchema, UpdateUserSchema, UserSettingsResponseSchema, UpdateUserSettingsSchema,
+    UserCredsSchema, UpdateUserSchema, UserSettingsResponseSchema, UpdateUserSettingsSchema, UserInvitesInfoSchema,
+    UserInvitesUpdateSchema,
 )
 from src.services.user_services import UserServices
 
@@ -94,6 +96,34 @@ async def get_user_profile(
     service = UserServices(session)
     user = await service.get_user_by_id(user_id=user_id)  # получаем юзера
     return user
+
+@router.get("/invites",
+            summary="Получение приглашений пользователя",
+            responses={
+                401: {"description": "Пользователь не авторизован"},
+            })
+async def get_user_invites(session: AsyncSession = Depends(get_session),
+                           user_id: UUID = Depends(get_current_user)) -> List[UserInvitesInfoSchema]:
+    """Ручка возвращает все приглашения пользователя, которые в данный момент ожидают рассмотрения"""
+    service = UserServices(session)
+    invites = await service.get_user_invites(user_id=user_id)
+    return invites
+
+@router.patch("/invites/{invite_id}",
+              summary="Изменить статус приглашения",
+              responses={
+                  401: {"description": "Пользователь не авторизован"},
+                  404: {"description": "Приглашение не найдено"}
+              })
+async def update_invite_status(invite_id: UUID,
+                               update: UserInvitesUpdateSchema,
+                               user_id: UUID = Depends(get_current_user),
+                               session: AsyncSession = Depends(get_session)):
+    """Ручка позволяет принять/отклонить приглашение в группу.
+     Если пользователь его принимает - он добавляется в указанный проект"""
+    service = UserServices(session)
+    await service.update_invite_status(invite_id=invite_id, new_schema=update, user_id=user_id)
+    return {"success": True}
 
 @router.patch("/me", summary="Обновить данные пользователя",
               responses={

@@ -4,7 +4,7 @@ from uuid import UUID
 from src.core.exceptions.project_exceptions import ProjectMemberConflictException, ProjectDeleteConflictException, \
     ProjectMemberNotFoundException, ProjectNotFoundException
 from src.api.schemas.project_schemas import ProjectSchema
-from src.db.models import Project, ProjectMember
+from src.db.models import Project
 from src.db.repositories.project_repo import ProjectRepository
 from src.services.user_services import UserServices
 
@@ -52,8 +52,8 @@ class ProjectServices:
             member_id=user.id
         )
 
-    async def add_member(self, member_email, project_id: UUID):
-        """функция добавляет участника в проект"""
+    async def send_member_invite(self, member_email, project_id: UUID):
+        """функция отправляет участнику приглашение в проект"""
         project = await self.get_project_by_id(project_id=project_id)
         
         member = await self.user_serv.get_user_by_email(member_email)
@@ -67,12 +67,10 @@ class ProjectServices:
         if existing:
             raise ProjectMemberConflictException(project_id=project.id, member_id=member.id)
 
-        member = await self.repo.add_member(
-            ProjectMember(project_id=project.id, user_id=member.id)
-        )
+        invite = await self.user_serv.add_user_invite(project_id=project_id, member_id=member.id)
 
         await self.repo.commit()
-        return member
+        return invite
 
     async def remove_member(self, project_id: UUID, member_email, user_id: UUID):
         member = await self.user_serv.get_user_by_email(email=member_email) # Получаем обьект пользователя по его почте

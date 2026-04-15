@@ -1,7 +1,8 @@
+from typing import Literal
 from pydantic import Field
 from pydantic import BaseModel, EmailStr
 
-from src.db.models import UserSettings
+from uuid import UUID
 
 
 class UserCredsSchema(BaseModel):
@@ -51,3 +52,16 @@ class UserSettingsResponseSchema(UserSettingsSchema):
 class UpdateUserSettingsSchema(UserSettingsSchema):
     pass
 
+class UserInvitesInfoSchema(BaseModel):
+    id: UUID = Field(title="Айди приглашения",)
+    user_id: UUID = Field(title="Айди пользователя",
+                          description="Айди приглашенного в проект пользователя",)
+    project_id: UUID = Field(title="Айди проекта",
+                             description="Айди проекта, в который пригласили пользователя",)
+    project_name: str = Field(title="Название проекта",)
+    project_author_email: EmailStr = Field(title="Почта автора проекта",
+                                           examples=["metoks@gmail.com"])
+
+class UserInvitesUpdateSchema(BaseModel):
+    status: Literal["accepted", "denied"] = Field(title="Статус приглашения",
+                                                  description="Принимается только accepted и deleted",)

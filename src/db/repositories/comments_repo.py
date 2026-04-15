@@ -1,6 +1,5 @@
 from uuid import UUID
 
-from httpx import options
 from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 from src.db.models import Comment

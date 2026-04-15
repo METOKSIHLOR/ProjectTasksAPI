@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import HTTPException, status
+from fastapi import status
 
 from src.core.exceptions.base_exception import BaseAPIException
 

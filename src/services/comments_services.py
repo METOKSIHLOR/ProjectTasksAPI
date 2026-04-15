@@ -1,6 +1,5 @@
 from uuid import UUID
 
-from sqlalchemy.exc import IntegrityError
 
 from src.core.exceptions.comments_exceptions import CommentNotFoundException
 from src.core.exceptions.users_exceptions import UserNotAuthenticatedException

@@ -2,16 +2,19 @@ from typing import List
 from fastapi.params import Cookie
 
 from src.api.authorization.hash import hash_password, verify_password
-from src.core.exceptions.users_exceptions import  ConflictEmailException, InvalidUserCredentialsException, \
-    UserNotFoundException, UserNotAuthorizedException
+from src.core.exceptions.users_exceptions import ConflictEmailException, InvalidUserCredentialsException, \
+    UserNotFoundException, UserNotAuthorizedException, UserInviteNotFoundException, ConflictInviteException
 
 from src.api.schemas.user_schemas import UserRegistrationSchema, UserCredsSchema, UpdateUserSettingsSchema, \
-    UserSettingsResponseSchema, UpdateUserSchema
-from src.db.models import User, UserSettings
+    UserSettingsResponseSchema, UpdateUserSchema, UserInvitesInfoSchema, UserInvitesUpdateSchema
+from src.db.models import User, UserSettings, UserInvite, ProjectMember
 from src.db.redis_storage import storage
+from src.db.repositories.project_repo import ProjectRepository
 from src.db.repositories.user_repo import UserRepository
 import uuid
 from uuid import UUID
+
+
 
 class UserServices:
     def __init__(self, session):
@@ -64,6 +67,43 @@ class UserServices:
             raise UserNotFoundException(user_cred=user_id)
         
         return user
+
+    async def add_user_invite(self, project_id: UUID, member_id: UUID):
+        exists = await self.repo.get_user_invite_by_project_id(user_id=member_id, project_id=project_id)
+
+        if exists is not None:
+            raise ConflictInviteException(member_id=member_id)
+
+        invite = await self.repo.add_user_invite(invite=UserInvite(project_id=project_id, user_id=member_id))
+
+        await self.repo.commit()
+
+        return invite
+
+    async def get_user_invites(self, user_id: UUID):
+        invites = await self.repo.get_user_invites(user_id=user_id)
+
+        # маппим модели для получения дополнительных полей
+        return [UserInvitesInfoSchema(id=invite.id,
+                                      user_id=invite.user_id,
+                                      project_id=invite.project_id,
+                                      project_name=invite.project.name,
+                                      project_author_email=invite.project.owner.email) for invite in invites]
+
+    async def update_invite_status(self, user_id: UUID, invite_id: UUID, new_schema: UserInvitesUpdateSchema):
+        invite = await self.repo.get_user_invite_by_id(user_id=user_id, invite_id=invite_id)
+
+        if invite is None:
+            raise UserInviteNotFoundException(user_cred=user_id, invite_id=invite_id)
+
+        # если пользователь принимает приглашение добавляем его
+        if new_schema.status == "accepted":
+            project_repo = ProjectRepository(session=self.repo.session)
+            await project_repo.add_member(ProjectMember(user_id=invite.user_id, project_id=invite.project_id,))
+
+        await self.repo.update_invite_status(invite=invite, new_detail=new_schema.model_dump())
+        await self.repo.commit()
+        return invite
 
     async def update_user_profile(self, user_id: UUID, new_details: UpdateUserSchema):
         if new_details.email is not None:

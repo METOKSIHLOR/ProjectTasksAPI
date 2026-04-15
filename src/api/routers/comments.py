@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends
 from uuid import UUID
 from src.api.dependencies import CheckUserPerms, get_current_user, get_session
 from src.api.schemas.comments_schemas import CommentInfoSchema, CommentUpdateSchema, CreateCommentSchema
