@@ -108,20 +108,20 @@ async def get_user_invites(session: AsyncSession = Depends(get_session),
     invites = await service.get_user_invites(user_id=user_id)
     return invites
 
-@router.patch("/invites/{invite_id}",
+@router.delete("/invites/{invite_id}",
               summary="Изменить статус приглашения",
               responses={
                   401: {"description": "Пользователь не авторизован"},
                   404: {"description": "Приглашение не найдено"}
               })
-async def update_invite_status(invite_id: UUID,
-                               update: UserInvitesUpdateSchema,
+async def invite_solution(invite_id: UUID,
+                               solution: UserInvitesUpdateSchema,
                                user_id: UUID = Depends(get_current_user),
                                session: AsyncSession = Depends(get_session)):
     """Ручка позволяет принять/отклонить приглашение в группу.
      Если пользователь его принимает - он добавляется в указанный проект"""
     service = UserServices(session)
-    await service.update_invite_status(invite_id=invite_id, new_schema=update, user_id=user_id)
+    await service.accept_or_deny_invite(user_id=user_id, invite_id=invite_id, solution=solution)
     return {"success": True}
 
 @router.patch("/me", summary="Обновить данные пользователя",

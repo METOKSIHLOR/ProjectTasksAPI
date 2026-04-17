@@ -90,18 +90,18 @@ class UserServices:
                                       project_name=invite.project.name,
                                       project_author_email=invite.project.owner.email) for invite in invites]
 
-    async def update_invite_status(self, user_id: UUID, invite_id: UUID, new_schema: UserInvitesUpdateSchema):
+    async def accept_or_deny_invite(self, user_id: UUID, invite_id: UUID, solution: UserInvitesUpdateSchema):
         invite = await self.repo.get_user_invite_by_id(user_id=user_id, invite_id=invite_id)
 
         if invite is None:
             raise UserInviteNotFoundException(user_cred=user_id, invite_id=invite_id)
 
         # если пользователь принимает приглашение добавляем его
-        if new_schema.status == "accepted":
+        if solution.status == "accepted":
             project_repo = ProjectRepository(session=self.repo.session)
             await project_repo.add_member(ProjectMember(user_id=invite.user_id, project_id=invite.project_id,))
 
-        await self.repo.update_invite_status(invite=invite, new_detail=new_schema.model_dump())
+        await self.repo.delete_user_invite(invite=invite)
         await self.repo.commit()
         return invite
 

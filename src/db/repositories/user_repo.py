@@ -54,6 +54,11 @@ class UserRepository:
         await self.session.flush()
         return invite
 
+    async def delete_user_invite(self, invite: UserInvite):
+        await self.session.delete(invite)
+        await self.session.flush()
+        return invite
+
     async def get_user_invites(self, user_id: UUID):
         stmt = (select(UserInvite).where(and_(UserInvite.user_id == user_id, UserInvite.status == "waiting"))
                 .options(selectinload(UserInvite.project).selectinload(Project.owner)))
