@@ -10,6 +10,7 @@ from src.api.routers.users import router as users_router
 from src.api.routers.tasks import router as tasks_router
 from src.api.routers.projects import router as projects_router
 from src.api.routers.comments import router as comments_router
+from src.api.routers.websockets import router as websockets_router
 
 async def lifespan(app: FastAPI):
     """жизненный цикл фастапи. При старте приложения открываем бд, при остановке закрываем"""
@@ -71,3 +72,4 @@ app.include_router(users_router)
 app.include_router(projects_router)
 app.include_router(tasks_router)
 app.include_router(comments_router)
+app.include_router(websockets_router)
