@@ -4,14 +4,15 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import CheckUserPerms, get_current_user, get_session
-from src.api.schemas.project_schemas import CreateProjectSchema, UpdateProjectSchema, ProjectSchemaWithMembers, ProjectMemberIdSchema, ProjectResponseSchema
+from src.api.schemas.project_schemas import CreateProjectSchema, UpdateProjectSchema, ProjectSchemaWithMembers, \
+    ProjectMemberIdSchema, ProjectResponseSchema, ProjectSchemaWithId
 from src.services.project_services import ProjectServices
 from src.services.user_services import UserServices
 from uuid import UUID
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
-@router.post("", response_model=ProjectResponseSchema, summary="Создать проект",
+@router.post("", response_model=ProjectSchemaWithId, summary="Создать проект",
             responses={
                 401: {"description": "Пользователь не авторизован"},
             })
