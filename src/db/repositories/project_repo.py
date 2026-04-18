@@ -28,7 +28,7 @@ class ProjectRepository:
 
     async def get_project_by_id(self, project_id: UUID):
         stmt = select(Project).where(Project.id == project_id).options(
-        selectinload(Project.members).selectinload(ProjectMember.user))
+        selectinload(Project.members).selectinload(ProjectMember.user), selectinload(Project.owner))
         project = await self.session.execute(stmt)
         return project.scalar_one_or_none()
 

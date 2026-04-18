@@ -60,6 +60,10 @@ class Project(Base):
                          passive_deletes=True)
     owner = relationship("User", foreign_keys=[owner_id], lazy="joined")
 
+    @property
+    def owner_email(self):
+        return self.owner.email
+
 class ProjectMember(Base):
     __tablename__ = "project_members"
 

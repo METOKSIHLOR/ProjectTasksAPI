@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import CheckUserPerms, get_current_user, get_session
-from src.api.schemas.project_schemas import CreateProjectSchema, UpdateProjectSchema, ProjectInfoSchema, ProjectMemberIdSchema, ProjectResponseSchema
+from src.api.schemas.project_schemas import CreateProjectSchema, UpdateProjectSchema, ProjectSchemaWithMembers, ProjectMemberIdSchema, ProjectResponseSchema
 from src.services.project_services import ProjectServices
 from src.services.user_services import UserServices
 from uuid import UUID
@@ -42,7 +42,7 @@ async def delete_project(project_id: UUID,
             responses={
                 401: {"description": "Пользователь не авторизован"},
             })
-async def get_all_user_projects(user_id = Depends(get_current_user), session = Depends(get_session)) -> List[ProjectInfoSchema]:
+async def get_all_user_projects(user_id = Depends(get_current_user), session = Depends(get_session)):
     """Получение всех проектов конкретного пользователя по его айди, полученному из куков"""
     service = UserServices(session)
     projects = await service.get_user_projects(user_id)
@@ -56,7 +56,7 @@ async def get_all_user_projects(user_id = Depends(get_current_user), session = D
             })
 async def get_project_details(project_id: UUID,
                               session: AsyncSession = Depends(get_session),
-                              _: None = Depends(CheckUserPerms(["member", "owner"]))) -> ProjectInfoSchema:
+                              _: None = Depends(CheckUserPerms(["member", "owner"]))) -> ProjectSchemaWithMembers:
     """Возвращает название и участников проекта по его айди"""
     service = ProjectServices(session)
 

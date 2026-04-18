@@ -15,6 +15,10 @@ class ProjectSchemaWithId(ProjectSchema):
     id: UUID = Field(title="Айди проекта",
                     description="Должно быть uuid",)
 
+class ProjectSchemaWithOwnerEmail(ProjectSchemaWithId):
+    owner_email: EmailStr = Field(title="Почта владельца проекта",
+                                  examples=["metoks@gmail.com"], )
+
 class ProjectResponseSchema(ProjectSchemaWithId):
     """Схема для ответов. Возвращает айди проекта и его название"""
     pass
@@ -32,7 +36,7 @@ class UpdateProjectSchema(ProjectSchema):
                       examples=[""])
 
 class ProjectMemberSchema(BaseModel):
-    """Схема для валидации участников проекта. Нигде в ручках напрямую не используется, но требуется в качестве списка для ProjectInfoSchema"""
+    """Схема для валидации участников проекта. Нигде в ручках напрямую не используется, но требуется в качестве списка для ProjectSchemaWithMembers"""
     name: str = Field(title="Имя пользователя")
     email: EmailStr = Field(title="Почта пользователя",
                             examples=["metoks@gmail.com"])
@@ -42,7 +46,7 @@ class ProjectMemberSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class ProjectInfoSchema(ProjectSchemaWithId):
+class ProjectSchemaWithMembers(ProjectSchemaWithOwnerEmail):
     members: list[ProjectMemberSchema] = Field(title="Участники проекта",
                                                description="Список всех участников с их именами, почтой и ролью")
 
