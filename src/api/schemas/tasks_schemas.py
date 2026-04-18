@@ -39,7 +39,7 @@ class TaskInfoSchema(TaskSchemaWithStatus):
 class TaskInfoSchemaWithOwnerEmail(TaskInfoSchema):
     project_owner_email: EmailStr = Field(title="Почта владельца проекта",
                                           description="Почта владельца проекта, к которому привязана эта таска",
-                                          examples=["metoms@gmail.com"])
+                                          examples=["metoks@gmail.com"])
 
 class UpdateTaskSchema(TaskSchema):
     """Схема для обновления данных в таске. Для полей которые обновлять не надо оставить None"""
