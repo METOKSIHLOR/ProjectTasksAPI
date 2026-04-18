@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import HTMLResponse
 
 from src.config.config import config
 from src.core.exceptions.base_exception import BaseAPIException

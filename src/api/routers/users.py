@@ -124,6 +124,7 @@ async def invite_solution(invite_id: UUID,
     await service.accept_or_deny_invite(user_id=user_id, invite_id=invite_id, solution=solution)
     return {"success": True}
 
+
 @router.patch("/me", summary="Обновить данные пользователя",
               responses={
                   401: {"description": "Пользователь не авторизован"},
