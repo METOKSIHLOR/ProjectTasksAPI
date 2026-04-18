@@ -19,7 +19,7 @@ class ProjectSchemaWithOwnerEmail(ProjectSchemaWithId):
     owner_email: EmailStr = Field(title="Почта владельца проекта",
                                   examples=["metoks@gmail.com"], )
 
-class ProjectResponseSchema(ProjectSchemaWithId):
+class ProjectResponseSchema(ProjectSchemaWithOwnerEmail):
     """Схема для ответов. Возвращает айди проекта и его название"""
     pass
 
@@ -46,7 +46,7 @@ class ProjectMemberSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class ProjectSchemaWithMembers(ProjectSchemaWithOwnerEmail):
+class ProjectSchemaWithMembers(ProjectSchemaWithId):
     members: list[ProjectMemberSchema] = Field(title="Участники проекта",
                                                description="Список всех участников с их именами, почтой и ролью")
 
