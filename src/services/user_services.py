@@ -2,6 +2,7 @@ from typing import List
 from fastapi.params import Cookie
 
 from src.api.authorization.hash import hash_password, verify_password
+from src.api.routers.websockets import manager
 from src.core.exceptions.users_exceptions import ConflictEmailException, InvalidUserCredentialsException, \
     UserNotFoundException, UserNotAuthorizedException, UserInviteNotFoundException, ConflictInviteException
 
@@ -78,6 +79,10 @@ class UserServices:
 
         await self.repo.commit()
 
+        await manager.send_to_room(f"user:{member_id}",
+                                   {"type": "invite",
+                                    "project_id": project_id})
+
         return invite
 
     async def get_user_invites(self, user_id: UUID):
@@ -101,6 +106,10 @@ class UserServices:
             project_repo = ProjectRepository(session=self.repo.session)
             await project_repo.add_member(ProjectMember(user_id=invite.user_id, project_id=invite.project_id,))
 
+            await manager.send_to_room(f"project:{invite.project_id}",
+                                       {"type": "invite_accept",
+                                        "user_email": invite.user.email,})
+
         await self.repo.delete_user_invite(invite=invite)
         await self.repo.commit()
         return invite
@@ -117,6 +126,11 @@ class UserServices:
 
         await self.repo.commit()
 
+        await manager.send_to_room(f"user:{user_id}",
+                                   {"type": "update_profile",
+                                    "new_details": new_details.model_dump()})
+
+        return user
     async def get_user_projects(self, user_id: UUID):
         projects = await self.repo.get_user_projects(user_id)
         return projects
@@ -130,6 +144,11 @@ class UserServices:
         user = await self.get_user_by_id(user_id=user_id)
         await self.repo.update_user_settings(user=user, new_data=new_settings.model_dump())
         await self.repo.commit()
+
+        await manager.send_to_room(f"user:{user_id}",
+                                   {"type": "update_settings",
+                                    "new_settings": new_settings.model_dump()})
+
         return UserSettingsResponseSchema(settings=user.settings.settings)
 
     async def check_user_role(self, user_id, project_id, roles: List[str]):

@@ -66,7 +66,8 @@ class UserRepository:
         return invites.scalars().all()
 
     async def get_user_invite_by_id(self, invite_id: UUID, user_id: UUID):
-        stmt = select(UserInvite).where(and_(UserInvite.id == invite_id, UserInvite.user_id == user_id, UserInvite.status == "waiting"))
+        stmt = (select(UserInvite).where(and_(UserInvite.id == invite_id, UserInvite.user_id == user_id, UserInvite.status == "waiting"))
+                .options(selectinload(UserInvite.user)))
         invite = await self.session.execute(stmt)
         return invite.scalar_one_or_none()
 

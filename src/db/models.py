@@ -40,6 +40,7 @@ class UserInvite(Base):
     status: Mapped[Literal["accepted", "denied", "waiting"]] = mapped_column(nullable=True, default='waiting')
 
     project = relationship("Project")
+    user = relationship("User")
 
 class Project(Base):
     __tablename__ = "projects"
