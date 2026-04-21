@@ -1,6 +1,6 @@
 from uuid import UUID
 
-
+from src.api.routers.websockets import manager
 from src.core.exceptions.project_exceptions import ProjectMemberConflictException, ProjectDeleteConflictException, \
     ProjectMemberNotFoundException, ProjectNotFoundException
 from src.api.schemas.project_schemas import ProjectSchema
@@ -32,6 +32,10 @@ class ProjectServices:
         
         await self.repo.delete_project(project)
         await self.repo.commit()
+
+        await manager.send_to_room(f"project:{project_id}",
+                                   {"type": "project_delete",
+                                    "project_id": project_id})
 
         return project
 
@@ -85,12 +89,25 @@ class ProjectServices:
 
         await self.repo.remove_member(member=project_member)
         await self.repo.commit()
+
+        await manager.send_to_room(f"project:{project_id}",
+                                   {"type": "member_remove",
+                                    "project_id": project_id,
+                                    "member_id": member.id,
+                                    "member_email": member_email})
+
         return member
 
     async def update_project_name(self, project_id: UUID, name: str):
         project = await self.get_project_by_id(project_id=project_id)
         project = await self.repo.update_project_name(project=project, name=name)
         await self.repo.commit()
+
+        await manager.send_to_room(f"project:{project_id}",
+                                   {"type": "project_update",
+                                    "project_id": project_id,
+                                    "new_details": name})
+
         return project
 
 
