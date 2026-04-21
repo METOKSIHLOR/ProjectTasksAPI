@@ -79,27 +79,6 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Cookie(None
                 case "unsubscribe":
                     if rooms:
                         manager.disconnect(websocket, rooms)
-                case "invite_user":
-                    await manager.send_to_room(f"user:{user_id}", {
-                        "action": "project_invite",
-                        "project_id": message["project_id"]
-                    })
-                case "remove_member":
-                    await manager.send_to_room(f"project:{message['project_id']}", {
-                        "action": "remove_member",
-                        "project_id": message["project_id"],
-                        "member_id": message["member_id"]
-                    })
-                case "create_task":
-                    await manager.send_to_room(f"project:{message['project_id']}", {
-                        "action": "create_task",
-                        "project_id": message["project_id"]
-                    })
-                case "create_comment":
-                    await manager.send_to_room(f"task:{message['task_id']}", {
-                        "action": "create_comment",
-                        "task_id": message["task_id"]
-                    })
                 case _:
                     # Если действие не распознано
                     await websocket.send_json({"error": "Invalid action"})
