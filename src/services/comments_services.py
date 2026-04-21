@@ -48,6 +48,7 @@ class CommentsServices:
                 author_email=comment.author.email,
                 author_name=comment.author.name,
                 replied_to=comment.replied_to if not comment.is_reply_deleted else "deleted",
+                created_at=comment.created_at,
             )
             for comment in comments
         ]

@@ -1,8 +1,10 @@
 import uuid
+from datetime import datetime
 from uuid import UUID
 
 from typing import Literal
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_serializer
+
 
 class CommentSchema(BaseModel):
     text: str = Field(title="Текст комментария",
@@ -27,6 +29,13 @@ class CommentInfoSchema(CommentSchema):
 
     replied_to: uuid.UUID | Literal["deleted"] | None = Field(None, title="Айди реплая",
                                 description="Айди комментария, на который отвечает юзер (опционально)",)
+
+    created_at: datetime = Field(title="Время создания коммента")
+
+    @field_serializer('created_at')
+    def serialize_dt(self, dt: datetime, _info):
+        """делаем человекочитаемый формат времени"""
+        return dt.strftime('%Y-%m-%d %H:%M:%S')
 
 
 class CommentUpdateSchema(CommentSchema):
