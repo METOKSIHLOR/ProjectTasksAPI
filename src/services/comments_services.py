@@ -1,6 +1,6 @@
 from uuid import UUID
 
-
+from src.api.routers.websockets import manager
 from src.core.exceptions.comments_exceptions import CommentNotFoundException
 from src.core.exceptions.users_exceptions import UserNotAuthenticatedException
 from src.services.user_services import UserServices
@@ -29,6 +29,13 @@ class CommentsServices:
 
         await self.repo.commit()
         await self.repo.session.refresh(comment, attribute_names=["author"])
+
+        await manager.send_to_room(f"task:{task_id}",
+                                   {"type": "comment_create",
+                                    "task_id": task_id,
+                                    "author_email": comment.author.email,
+                                    "created_at": comment.created_at,})
+
         return comment
 
     async def get_comments(self, project_id: UUID, task_id: UUID):
@@ -67,6 +74,13 @@ class CommentsServices:
 
         await self.repo.update_comment(comment=comment, text=text)
         await self.repo.commit()
+
+        await manager.send_to_room(f"task:{task_id}",
+                                   {"type": "comment_update",
+                                    "task_id": task_id,
+                                    "comment_id": comment_id,
+                                    "new_text": text,})
+
         return comment
 
     async def delete_comment(
@@ -84,6 +98,11 @@ class CommentsServices:
         await self.repo.delete_comment(comment)
 
         await self.repo.commit()
+
+        await manager.send_to_room(f"task:{task_id}",
+                                   {"type": "comment_delete",
+                                    "task_id": task_id,
+                                    "comment_id": comment_id,})
         return comment
 
     async def get_comment_belong_to_task(
