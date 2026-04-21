@@ -80,7 +80,7 @@ class UserServices:
         await self.repo.commit()
 
         await manager.send_to_room(f"user:{member_id}",
-                                   {"type": "invite",
+                                   {"type": "invite_create",
                                     "project_id": project_id})
 
         return invite
@@ -127,7 +127,7 @@ class UserServices:
         await self.repo.commit()
 
         await manager.send_to_room(f"user:{user_id}",
-                                   {"type": "update_profile",
+                                   {"type": "profile_update",
                                     "new_details": new_details.model_dump()})
 
         return user
@@ -146,7 +146,7 @@ class UserServices:
         await self.repo.commit()
 
         await manager.send_to_room(f"user:{user_id}",
-                                   {"type": "update_settings",
+                                   {"type": "settings_update",
                                     "new_settings": new_settings.model_dump()})
 
         return UserSettingsResponseSchema(settings=user.settings.settings)
