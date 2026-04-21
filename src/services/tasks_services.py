@@ -1,6 +1,6 @@
 from uuid import UUID
 
-
+from src.api.routers.websockets import manager
 from src.core.exceptions.tasks_exceptions import TaskNotFoundException, AssigneeNotFoundException
 from src.api.schemas.tasks_schemas import (
     CreateTaskSchema,
@@ -39,6 +39,12 @@ class TasksService:
 
         # маппим данные из вернувшейся модели для дополнительного получения почты исполнителя
         await self.repo.commit()
+
+        await manager.send_to_room(f"project:{project_id}",
+                                   {"type": "task_create",
+                                    "title": task.title,
+                                    "assignee_id": task.assignee_id,})
+
         return TaskInfoSchema(
             id=task.id,
             title=task.title,
@@ -66,6 +72,11 @@ class TasksService:
     async def delete_task(self, task_id: UUID, project_id: UUID):
         task = await self.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)
         await self.repo.delete_task(task)
+
+        await manager.send_to_room(f"project:{project_id}",
+                                   {"type": "task_delete",
+                                    "task_id": task.id})
+
         await self.repo.commit()
 
     async def update_task(
@@ -106,5 +117,11 @@ class TasksService:
             del dict_task["assignee_email"]
 
         await self.repo.update_task(task=task, new_task=dict_task)
+
+        await manager.send_to_room(f"project:{project_id}",
+                                   {"type": "task_update",
+                                    "task_id": task.id,
+                                    "new_details": dict_task})
+
         await self.repo.commit()
         return task
