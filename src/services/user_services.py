@@ -126,10 +126,6 @@ class UserServices:
 
         await self.repo.commit()
 
-        await manager.send_to_room(f"user:{user_id}",
-                                   {"type": "profile_update",
-                                    "new_details": new_details.model_dump()})
-
         return user
     async def get_user_projects(self, user_id: UUID):
         projects = await self.repo.get_user_projects(user_id)
@@ -144,10 +140,6 @@ class UserServices:
         user = await self.get_user_by_id(user_id=user_id)
         await self.repo.update_user_settings(user=user, new_data=new_settings.model_dump())
         await self.repo.commit()
-
-        await manager.send_to_room(f"user:{user_id}",
-                                   {"type": "settings_update",
-                                    "new_settings": new_settings.model_dump()})
 
         return UserSettingsResponseSchema(settings=user.settings.settings)
 
