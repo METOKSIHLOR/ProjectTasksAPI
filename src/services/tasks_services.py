@@ -76,6 +76,8 @@ class TasksService:
         await manager.send_to_room(f"project:{project_id}",
                                    {"type": "task_delete",
                                     "task_id": task.id})
+        await manager.send_to_room(f"task:{task_id}",
+                                   {"type": "task_delete"})
 
         await self.repo.commit()
 
