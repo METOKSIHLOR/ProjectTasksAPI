@@ -81,7 +81,7 @@ class UserServices:
 
         await manager.send_to_room(f"user:{member_id}",
                                    {"type": "invite_create",
-                                    "project_id": project_id})
+                                    "project_id": str(project_id)})
 
         return invite
 

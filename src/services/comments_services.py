@@ -32,7 +32,7 @@ class CommentsServices:
 
         await manager.send_to_room(f"task:{task_id}",
                                    {"type": "comment_create",
-                                    "task_id": task_id,
+                                    "task_id": str(task_id),
                                     "author_email": comment.author.email,
                                     "created_at": comment.created_at,})
 
@@ -77,8 +77,8 @@ class CommentsServices:
 
         await manager.send_to_room(f"task:{task_id}",
                                    {"type": "comment_update",
-                                    "task_id": task_id,
-                                    "comment_id": comment_id,
+                                    "task_id": str(task_id),
+                                    "comment_id": str(comment_id),
                                     "new_text": text,})
 
         return comment
@@ -102,7 +102,7 @@ class CommentsServices:
         await manager.send_to_room(f"task:{task_id}",
                                    {"type": "comment_delete",
                                     "task_id": task_id,
-                                    "comment_id": comment_id,})
+                                    "comment_id": str(comment_id),})
         return comment
 
     async def get_comment_belong_to_task(

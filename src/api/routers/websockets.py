@@ -40,10 +40,13 @@ class ConnectionManager:
 
     async def send_to_room(self, room: str, message: dict):
         """Отправить сообщение всем участникам комнаты."""
+        print(f"Sending to {room}. Active rooms: {list(self.rooms.keys())}")
+        print(f"Users in this room: {len(self.rooms[room])}")
         for ws in self.rooms[room]:
             try:
                 await ws.send_json(message)
-            except Exception:
+            except Exception as e:
+                print(e)
                 # Если не удалось отправить сообщение (например, websocket отключен),
                 # отключаем его от всех комнат.
                 self.disconnect_all(ws)
@@ -87,6 +90,5 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Cookie(None
         manager.disconnect_all(websocket)
         await websocket.close()
     except Exception as e:
-        # В случае непредвиденной ошибки можно обработать и закрыть соединение
         await websocket.send_json({"error": str(e)})
         manager.disconnect_all(websocket)

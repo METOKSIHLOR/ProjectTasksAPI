@@ -35,7 +35,7 @@ class ProjectServices:
 
         await manager.send_to_room(f"project:{project_id}",
                                    {"type": "project_delete",
-                                    "project_id": project_id})
+                                    "project_id": str(project_id)})
 
         return project
 
@@ -92,8 +92,8 @@ class ProjectServices:
 
         await manager.send_to_room(f"project:{project_id}",
                                    {"type": "member_remove",
-                                    "project_id": project_id,
-                                    "member_id": member.id,
+                                    "project_id": str(project_id),
+                                    "member_id": str(member.id),
                                     "member_email": member_email})
 
         return member
@@ -105,7 +105,7 @@ class ProjectServices:
 
         await manager.send_to_room(f"project:{project_id}",
                                    {"type": "project_update",
-                                    "project_id": project_id,
+                                    "project_id": str(project_id),
                                     "new_details": name})
 
         return project
