@@ -78,7 +78,7 @@ class ConnectionManager:
 
     async def send_to_room(self, room: str, message: dict):
         """Отправить сообщение всем участникам комнаты."""
-        for ws in self.rooms[room]:
+        for ws in list(self.rooms[room]):
             try:
                 await ws.send_json(message)
             except Exception as e:
