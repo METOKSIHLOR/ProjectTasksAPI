@@ -21,6 +21,14 @@ class TasksRepository:
         stmt = (
             select(Task)
             .where(and_(Task.project_id == project_id, Task.id == task_id))
+        )
+        task = await self.session.execute(stmt)
+        return task.scalar_one_or_none()
+
+    async def get_task_by_project_with_owner(self, task_id: UUID, project_id: UUID):
+        stmt = (
+            select(Task)
+            .where(and_(Task.project_id == project_id, Task.id == task_id))
             .options(
                 selectinload(Task.assignee),  # подгружаем исполнителя
                 selectinload(Task.project).selectinload(Project.owner)  # подгружаем проект и его владельца
@@ -28,6 +36,7 @@ class TasksRepository:
         )
         task = await self.session.execute(stmt)
         return task.scalar_one_or_none()
+
 
     async def get_project_tasks(self, project_id: UUID):
         stmt = (

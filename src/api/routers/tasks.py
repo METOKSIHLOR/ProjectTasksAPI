@@ -53,7 +53,7 @@ async def get_task(project_id: UUID,
                    _: None = Depends(CheckUserPerms(["member","owner"]))) -> TaskInfoSchemaWithOwnerEmail:
     task_serv = TasksService(session=session)
     # проверяем есть ли такая таска в этом проекте. если да - возвращаем ее
-    task = await task_serv.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)
+    task = await task_serv.get_task_in_project_with_owner(task_id=task_id, project_id=project_id)
     return task
 
 @router.delete("/{task_id}",

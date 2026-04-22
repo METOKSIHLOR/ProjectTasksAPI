@@ -65,6 +65,17 @@ class TasksService:
         
         return task
 
+    async def get_task_in_project_with_owner(self, task_id: UUID, project_id: UUID):
+        """Функция подгружает проект и его владельца в котором находится задача и возвращает результат вместе с ними"""
+        task = await self.repo.get_task_by_project_with_owner(
+            project_id=project_id, task_id=task_id
+        )
+
+        if task is None:
+            raise TaskNotFoundException(project_id=project_id, task_id=task_id)
+
+        return task
+
     async def get_tasks_by_project_id(self, project_id: UUID):
         tasks = await self.repo.get_project_tasks(project_id)
         return tasks
