@@ -36,7 +36,7 @@ class UserInvite(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(PGUUID, primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("users.id"))
-    project_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("projects.id"))
+    project_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("projects.id", ondelete="CASCADE"))
     status: Mapped[Literal["accepted", "denied", "waiting"]] = mapped_column(nullable=True, default='waiting')
 
     project = relationship("Project")
