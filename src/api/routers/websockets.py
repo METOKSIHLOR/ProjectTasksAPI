@@ -1,25 +1,27 @@
-from typing import List
+import asyncio
+from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Cookie
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 
-from collections import defaultdict
-
-from sqlalchemy.ext.asyncio import AsyncSession
-
+import src.db.session as sess
 from src.core.exceptions.users_exceptions import UserNotAuthorizedException
 from src.db.redis_storage import storage
-import src.db.session as sess
 from src.db.repositories.project_repo import ProjectRepository
 from src.db.repositories.tasks_repo import TasksRepository
 
-import asyncio
 router = APIRouter()
 
 MAX_ROOMS_PER_USER = 5
+MAX_ROOMS_PER_MESSAGE = 50
+WRITE_QUEUE_SIZE = 200
+SEND_TIMEOUT_SECONDS = 5
 
-async def get_current_user(session_id):
+
+async def get_current_user(session_id: str | None):
     user_id = await storage.get(f"session_id:{session_id}")
 
     if user_id is None:
@@ -27,97 +29,184 @@ async def get_current_user(session_id):
 
     return user_id
 
-async def check_user_access(room: str, user_id: str, session: AsyncSession, repos: dict):
+
+@dataclass
+class UserAccessCache:
+    projects: dict[UUID, bool] = field(default_factory=dict)
+    tasks: dict[UUID, UUID | None] = field(default_factory=dict)
+
+
+async def check_user_access(
+    room: str,
+    user_id: str,
+    project_repo: ProjectRepository,
+    task_repo: TasksRepository,
+    cache: UserAccessCache,
+):
     try:
         resource_type, resource_id = room.split(":", 1)
+        resource_uuid = UUID(resource_id)
+        user_uuid = UUID(user_id)
 
         match resource_type:
             case "user":
-                return UUID(resource_id) == UUID(user_id)
+                return resource_uuid == user_uuid
+
             case "project":
-                repo = repos['project_repo']
-                member = await repo.get_project_member(project_id=UUID(resource_id), member_id=UUID(user_id))
-                return member is not None
+                if resource_uuid in cache.projects:
+                    return cache.projects[resource_uuid]
+
+                member = await project_repo.get_project_member(
+                    project_id=resource_uuid,
+                    member_id=user_uuid,
+                )
+                has_access = member is not None
+                cache.projects[resource_uuid] = has_access
+                return has_access
 
             case "task":
-                task_repo = repos['task_repo']
-                project_repo = repos['project_repo']
-                task = await task_repo.get_task_by_id(task_id=UUID(resource_id))
-                if not task:
+                if resource_uuid not in cache.tasks:
+                    task = await task_repo.get_task_by_id(task_id=resource_uuid)
+                    cache.tasks[resource_uuid] = task.project_id if task else None
+
+                project_id = cache.tasks[resource_uuid]
+                if project_id is None:
                     return False
-                return await project_repo.get_project_member(project_id=task.project_id, member_id=UUID(user_id))
+
+                if project_id in cache.projects:
+                    return cache.projects[project_id]
+
+                member = await project_repo.get_project_member(
+                    project_id=project_id,
+                    member_id=user_uuid,
+                )
+                has_access = member is not None
+                cache.projects[project_id] = has_access
+                return has_access
+
             case _:
                 return False
+
     except (TypeError, ValueError):
         return False
 
+
+@dataclass
+class ClientConnection:
+    rooms: set[str] = field(default_factory=set)
+    send_queue: asyncio.Queue[dict[str, Any]] = field(
+        default_factory=lambda: asyncio.Queue(maxsize=WRITE_QUEUE_SIZE),
+    )
+    lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    writer_task: asyncio.Task | None = None
+
+
 class ConnectionManager:
     def __init__(self):
-        self.rooms = defaultdict(set)
-        self.ws_rooms = defaultdict(set)
-        self.locks: dict[WebSocket, asyncio.Lock] = {}
+        self.rooms: defaultdict[str, set[WebSocket]] = defaultdict(set)
+        self.clients: dict[WebSocket, ClientConnection] = {}
 
-    async def connect(self, websocket: WebSocket, rooms: List[str]):
-        """Подключить websocket к одной или нескольким комнатам."""
-        lock = self.locks.setdefault(websocket, asyncio.Lock())
-        async with lock:
-            current_rooms = self.ws_rooms[websocket]
-            if len(rooms) == 0:
-                return {"success": False,
-                        "error": "Allowed rooms are empty"}
+    async def _writer(self, websocket: WebSocket):
+        client = self.clients.get(websocket)
+        if client is None:
+            return
 
+        try:
+            while True:
+                payload = await client.send_queue.get()
+                if payload is None:
+                    return
+
+                await asyncio.wait_for(
+                    websocket.send_json(payload),
+                    timeout=SEND_TIMEOUT_SECONDS,
+                )
+        except Exception:
+            await self.disconnect_all(websocket)
+
+    async def register(self, websocket: WebSocket):
+        if websocket in self.clients:
+            return
+
+        client = ClientConnection()
+        client.writer_task = asyncio.create_task(self._writer(websocket))
+        self.clients[websocket] = client
+
+    async def connect(self, websocket: WebSocket, rooms: list[str]):
+        client = self.clients.get(websocket)
+        if client is None:
+            return {"success": False, "error": "Connection is not registered."}
+
+        async with client.lock:
+            if not rooms:
+                return {"success": False, "error": "Allowed rooms are empty"}
+
+            current_rooms = client.rooms
             new_rooms = set(rooms) - current_rooms
+
             if len(new_rooms) + len(current_rooms) > MAX_ROOMS_PER_USER:
-                return {"success": False,
-                        "error": "The rooms limit has been reached."}
+                return {
+                    "success": False,
+                    "error": "The rooms limit has been reached.",
+                }
 
             for room in new_rooms:
                 self.rooms[room].add(websocket)
-                self.ws_rooms[websocket].add(room)
-            return {"success": True,
-                    "rooms": list(new_rooms),}
+                current_rooms.add(room)
 
-    async def disconnect(self, websocket: WebSocket, rooms: List[str]):
-        """Отключить websocket от указанных комнат."""
-        lock = self.locks.setdefault(websocket, asyncio.Lock())
-        async with lock:
+            return {
+                "success": True,
+                "rooms": list(new_rooms),
+            }
+
+    async def disconnect(self, websocket: WebSocket, rooms: list[str]):
+        client = self.clients.get(websocket)
+        if client is None:
+            return
+
+        async with client.lock:
             for room in rooms:
                 sockets = self.rooms.get(room)
                 if not sockets:
                     continue
 
                 sockets.discard(websocket)
-
-                self.ws_rooms[websocket].discard(room)
+                client.rooms.discard(room)
 
                 if not sockets:
                     del self.rooms[room]
 
     async def disconnect_all(self, websocket: WebSocket):
-        lock = self.locks.setdefault(websocket, asyncio.Lock())
-        async with lock:
-            for room in list(self.ws_rooms.get(websocket, set())):
+        client = self.clients.get(websocket)
+        if client is None:
+            return
+
+        async with client.lock:
+            for room in list(client.rooms):
                 sockets = self.rooms.get(room)
                 if sockets:
                     sockets.discard(websocket)
                     if not sockets:
                         del self.rooms[room]
+                client.rooms.discard(room)
 
-            self.ws_rooms.pop(websocket, None)
-        self.locks.pop(websocket, None)
+        client.writer_task.cancel()
+        self.clients.pop(websocket, None)
 
-    async def send_to_room(self, room: str, message: dict):
-        """Отправить сообщение всем участникам комнаты."""
-        to_disconnect = []
+    async def send_to_ws(self, websocket: WebSocket, message: dict[str, Any]):
+        client = self.clients.get(websocket)
+        if client is None:
+            return
 
+        try:
+            client.send_queue.put_nowait(message)
+        except asyncio.QueueFull:
+            await self.disconnect_all(websocket)
+
+    async def send_to_room(self, room: str, message: dict[str, Any]):
         for ws in list(self.rooms.get(room, [])):
-            try:
-                await ws.send_json(message)
-            except Exception:
-                to_disconnect.append(ws)
+            await self.send_to_ws(ws, message)
 
-        for ws in to_disconnect:
-            await self.disconnect_all(ws)
 
 manager = ConnectionManager()
 
@@ -126,59 +215,81 @@ manager = ConnectionManager()
 async def websocket_endpoint(websocket: WebSocket, session_id: str = Cookie(None)):
     try:
         user_id = await get_current_user(session_id)
-    except UserNotAuthorizedException as e:
-        await websocket.close()
-        return e
+    except UserNotAuthorizedException:
+        await websocket.close(code=1008)
+        return
 
     await websocket.accept()
+    await manager.register(websocket)
 
-    rooms = [f"user:{user_id}"]
-    await manager.connect(websocket, rooms)
+    await manager.connect(websocket, [f"user:{user_id}"])
 
     try:
         while True:
             try:
                 message = await websocket.receive_json()
+            except WebSocketDisconnect:
+                break
             except Exception:
+                await manager.send_to_ws(
+                    websocket,
+                    {"success": False, "error": "Invalid message format"},
+                )
                 continue
 
-            if len(message.get("rooms", [])) > 50:
-                await websocket.send_json({"success": False,
-                                           "error": "Message too large."})
+            if not isinstance(message, dict):
+                await manager.send_to_ws(
+                    websocket,
+                    {"success": False, "error": "Invalid message format"},
+                )
+                continue
+
+            message_rooms = message.get("rooms", [])
+            if not isinstance(message_rooms, list) or len(message_rooms) > MAX_ROOMS_PER_MESSAGE:
+                await manager.send_to_ws(
+                    websocket,
+                    {"success": False, "error": "Message too large."},
+                )
                 continue
 
             action = message.get("action")
             rooms = [
-                r for r in set(message.get("rooms", []))
-                if isinstance(r, str) and ":" in r
+                room
+                for room in set(message_rooms)
+                if isinstance(room, str) and ":" in room
             ]
-            # Обработка различных действий с помощью match
+
             match action:
                 case "subscribe":
-                    allowed_rooms = []
-                    async with sess.SessionFactory() as session:
-                        repos = {
-                            "project_repo": ProjectRepository(session),
-                            "task_repo": TasksRepository(session),
-                        }
-                        for room in rooms:
-                            if await check_user_access(room=room, user_id=user_id, session=session, repos=repos):
-                                allowed_rooms.append(room)
+                    allowed_rooms: list[str] = []
+                    if rooms:
+                        async with sess.SessionFactory() as session:
+                            project_repo = ProjectRepository(session)
+                            task_repo = TasksRepository(session)
+                            cache = UserAccessCache()
+
+                            for room in rooms:
+                                has_access = await check_user_access(
+                                    room=room,
+                                    user_id=user_id,
+                                    project_repo=project_repo,
+                                    task_repo=task_repo,
+                                    cache=cache,
+                                )
+                                if has_access:
+                                    allowed_rooms.append(room)
 
                     result = await manager.connect(websocket, allowed_rooms)
-
-                    await websocket.send_json(result)
+                    await manager.send_to_ws(websocket, result)
 
                 case "unsubscribe":
                     if rooms:
                         await manager.disconnect(websocket, rooms)
 
                 case _:
-                    # Если действие не распознано
-                    await websocket.send_json({"success": False,
-                                               "error": "Invalid action"})
-    except Exception as e:
-        await websocket.send_json({"success": False,
-                                   "error": str(e)})
+                    await manager.send_to_ws(
+                        websocket,
+                        {"success": False, "error": "Invalid action"},
+                    )
     finally:
         await manager.disconnect_all(websocket)
