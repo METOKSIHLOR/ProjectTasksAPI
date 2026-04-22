@@ -65,7 +65,10 @@ class ConnectionManager:
     def disconnect(self, websocket: WebSocket, rooms: List[str]):
         """Отключить websocket от указанных комнат."""
         for room in rooms:
-            self.rooms[room].remove(websocket)
+            if websocket in self.rooms[room]:
+                self.rooms[room].remove(websocket)
+                if not self.rooms[room]:
+                    del self.rooms[room]
 
     def disconnect_all(self, websocket: WebSocket):
         """Отключить websocket от всех комнат."""
