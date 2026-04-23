@@ -1,0 +1,148 @@
+/* ===== CSS RESET & BASE ===== */
+
+/* box-sizing */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* сброс отступов */
+* { margin: 0; padding: 0; }
+
+/* базовые настройки страницы */
+html, body, #app { height: 100%; min-height: 100%; line-height: 1.5; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+/* медиа */
+img, picture, video, canvas, svg { display: block; max-width: 100%; }
+
+/* формы наследуют шрифт */
+input, button, textarea, select { font: inherit; }
+
+/* кнопки */
+button { cursor: pointer; background: none; border: none; }
+
+/* ссылки */
+a { color: inherit; text-decoration: none; }
+
+/* списки */
+ul, ol { list-style: none; }
+
+/* таблицы */
+table { border-collapse: collapse; border-spacing: 0; }
+
+/* перенос длинных слов */
+p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
+
+body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 6px;
+    border: 2px solid var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+}
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) var(--color-bg);
+}
+
+
+
+/* FADE TRANSITION GROUP */
+.fade-enter-from {
+    opacity: 0;
+}
+.fade-enter-active {
+    transition: all 1.0s ease;
+}
+.fade-enter-to {
+    opacity: 1;
+}
+
+/* Анимация удаления */
+.fade-leave-from {
+    opacity: 1;
+    transform: scale(1);
+}
+.fade-leave-active {
+    position: absolute;
+    width: 100%;
+    transition: all 1.0s;
+    pointer-events: none;
+}
+.fade-leave-to {
+    opacity: 0;
+    transform: scale(1.2);
+}
+
+/* Поднятие оставшихся */
+.fade-move {
+    transition: all 1.0s ease;
+}
+
+.list-empty {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-title);
+    font-style: italic;
+}
+
+.modal-title{
+    margin-bottom:12px;
+    font-size: var(--font-size-title);
+}
+
+.page-title {
+    font-size: var(--font-size-title);
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--font-size-title);
+}
+
+.list {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+    transition: all 0.3s ease;
+}
+
+.edit-btn {
+    width: calc(var(--font-size-title) + 6px);
+    height: calc(var(--font-size-title) + 6px);
+    font-size: calc(var(--font-size-title) - 8px);
+    border: 1px solid var(--color-primary);
+    background: var(--color-bg);
+    color: var(--color-text);
+    display: flex;
+    border-radius: 50% !important;
+    align-items: center;
+    justify-content: center;
+}
+.edit-btn:hover {
+    background: var(--color-primary);
+    color: #ffffff;
+}
