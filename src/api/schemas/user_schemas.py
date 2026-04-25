@@ -18,14 +18,14 @@ class UserCredsSchema(BaseModel):
 
 class UserRegistrationSchema(UserCredsSchema):
     """Схема с данными пользователя для регистрации. Имя аккаунта, почта и пароль. Идентификация юзера проиходит по почте"""
-    name: str = Field(min_length=3, title="Имя пользователя",
-                      description="Не меньше 3 символов",
+    name: str = Field(min_length=3, max_length=50, title="Имя пользователя",
+                      description="Не меньше 3 символов, не больше 50",
                       examples=["METOKS", "Antooooooon"])
 
 class UpdateUserSchema(BaseModel):
     """Схема для обновления имени пользователя"""
-    name: str | None = Field(None, min_length=3, title="Имя пользователя",
-                      description="Не меньше 3 символов",
+    name: str | None = Field(None, min_length=3, max_length=50, title="Имя пользователя",
+                      description="Не меньше 3 символов, не больше 50",
                       examples=["METOKS", "Antooooooon"])
     email: EmailStr | None = Field(None, title="Почта пользователя",
                             description="Принимается любая почта, которая содержит @",
@@ -33,8 +33,8 @@ class UpdateUserSchema(BaseModel):
 
 class UserResponseSchema(BaseModel):
     """Схема для получения данных о юзере. Его имя и почта"""
-    name: str = Field(min_length=3, title="Имя пользователя",
-                      description="Не меньше 3 символов",
+    name: str | None = Field(None, min_length=3, max_length=50, title="Имя пользователя",
+                      description="Не меньше 3 символов, не больше 50",
                       examples=["METOKS", "Antooooooon"])
     
     email: EmailStr = Field(title="Почта пользователя",
