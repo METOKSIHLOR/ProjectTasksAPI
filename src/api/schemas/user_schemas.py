@@ -1,4 +1,4 @@
-from typing import Literal, List
+from typing import Literal
 from pydantic import Field
 from pydantic import BaseModel, EmailStr
 

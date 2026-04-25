@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 
-from src.api.schemas.user_schemas import UpdateUserSettingsSchema
 from src.db.models import User, Project, ProjectMember, UserInvite
 
 
