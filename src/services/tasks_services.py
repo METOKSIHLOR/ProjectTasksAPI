@@ -43,7 +43,7 @@ class TasksService:
         await manager.send_to_room(f"project:{project_id}",
                                    {"type": "task_create",
                                     "title": task.title,
-                                    "assignee_id": task.assignee_id,})
+                                    "assignee_id": str(task.assignee_id),})
 
         return TaskInfoSchema(
             id=task.id,
@@ -86,7 +86,7 @@ class TasksService:
 
         await manager.send_to_room(f"project:{project_id}",
                                    {"type": "task_delete",
-                                    "task_id": task.id})
+                                    "task_id": str(task.id)})
         await manager.send_to_room(f"task:{task_id}",
                                    {"type": "task_delete"})
 

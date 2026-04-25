@@ -204,6 +204,7 @@ class ConnectionManager:
             await self.disconnect_all(websocket)
 
     async def send_to_room(self, room: str, message: dict[str, Any]):
+        print("sending to room", room, message)
         for ws in list(self.rooms.get(room, [])):
             await self.send_to_ws(ws, message)
 

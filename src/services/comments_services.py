@@ -101,7 +101,7 @@ class CommentsServices:
 
         await manager.send_to_room(f"task:{task_id}",
                                    {"type": "comment_delete",
-                                    "task_id": task_id,
+                                    "task_id": str(task_id),
                                     "comment_id": str(comment_id),})
         return comment
 
