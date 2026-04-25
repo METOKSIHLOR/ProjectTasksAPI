@@ -17,20 +17,14 @@ const STYLE_OPTIONS = {
     theme: {
         light: 'light',
         dark: 'dark'
-    },
-    // Дополнительно можем добавить и другие настройки, например:
-    // density: { comfortable: 'comfortable', compact: 'compact' }
+    }
 }
 
-/// backend
-
 export const styles = reactive({
-    fontSize: 'normal' ,        // normal | large
+    fontSize: 'normal',        // normal | large
     layoutWidth: 'normal',     // normal | wide
     primaryHue: 'green',       // green | blue | purple
-    theme: 'light',            // light | dark
-    // Добавить новые настройки
-    // density: 'comfortable'  // comfortable | compact
+    theme: 'light'            // light | dark
 })
 
 function applyStyles() {
