@@ -7,7 +7,7 @@ AllowedRoles = Literal["owner", "member"]
 class ProjectSchema(BaseModel):
     name: str = Field(title="Название проекта",
                       description="Название должно быть от 3 до 25 символов",
-                      min_length=3,
+                      min_length=1,
                       max_length=25,
                       examples=["Microsoft API project"])
 
@@ -30,8 +30,8 @@ class CreateProjectSchema(ProjectSchema):
 class UpdateProjectSchema(ProjectSchema):
     """Схема для обновления названия проекта. Требуется только его название"""
     name: str = Field(title="Название проекта",
-                      description="Название должно быть от 3 до 25 символов",
-                      min_length=3,
+                      description="Название должно быть от 1 до 25 символов",
+                      min_length=1,
                       max_length=25,
                       examples=[""])
 
