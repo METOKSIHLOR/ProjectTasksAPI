@@ -1,5 +1,5 @@
 <script setup>
-import {computed, nextTick, onMounted, ref, watch} from 'vue'
+import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import * as yup from 'yup'
 import DashboardLayout from '../components/Layout.vue'
@@ -20,7 +20,7 @@ import {
 import { currentUser } from '../store/auth_store.js'
 import { getStatusText, getStatusColor } from '../modules/statusModule.js'
 import {alertError, alertInfo, alertSuccess, parseApiError} from "../store/alert_store.js";
-import {subscribe} from '../api/ws'
+import {connectWS, subscribe} from '../api/ws'
 
 const router = useRouter()
 const route = useRoute()
@@ -45,6 +45,7 @@ const owner = computed(() =>
 // Ссылка на Layout
 const layoutRef = ref(null)
 const toggleCollapse = ref(true)
+let socket = null
 
 // Метод для вызова переключения
 function toggleLayoutStretch() {
@@ -131,6 +132,16 @@ async function loadProject() {
 
   } finally {
     loading.value = false
+  }
+}
+
+async function reloadTasks() {
+  try {
+    tasks.value = await getTasks(projectId.value)
+  }
+  catch (err) {
+    const { title, message } = parseApiError(err)
+    alertError(title, message)
   }
 }
 
@@ -243,6 +254,13 @@ function getMemberName(member) {
       : member.name
 }
 
+function getMemberNameByEmail(email) {
+  const member = members.value.find(m => m.email === email)
+  return member?.email === currentUser.value?.email
+      ? currentUser.value?.name
+      : member?.name || email || 'Someone'
+}
+
 // RELOAD ON ROUTE CHANGE
 watch(
     () => route.params.projectId,
@@ -257,9 +275,80 @@ function openRenameProject() {
   renameForm[0].value = project.value?.name || ''
   showRenameProject.value = true
 }
+
+async function handleProjectMessage(event) {
+  try {
+    const msg = JSON.parse(event.data)
+
+    if (msg?.type === 'project_update' && msg.project_id === projectId.value && project.value) {
+      if (isOwner.value) {
+        return
+      }
+
+      project.value.name = msg.new_details
+      alertInfo(
+          'Attention!',
+          `${owner.value?.name || 'Project owner'} updated Project Name`
+      )
+    }
+
+    if (msg?.type === 'task_delete' && project.value) {
+      if (isOwner.value) {
+        return
+      }
+
+      await reloadTasks()
+      alertInfo(
+          'Attention!',
+          `${owner.value?.name || 'Project owner'} deleted a task`
+      )
+    }
+
+    if (msg?.type === 'task_update' && project.value) {
+      const taskIndex = tasks.value.findIndex(task => task.id === msg.task_id)
+      const currentTask = taskIndex !== -1 ? tasks.value[taskIndex] : null
+
+      if (taskIndex !== -1 && msg.new_details && typeof msg.new_details === 'object') {
+        tasks.value[taskIndex] = {
+          ...tasks.value[taskIndex],
+          ...msg.new_details
+        }
+      }
+
+      let actorName = owner.value?.name || 'Project owner'
+      let actionText = 'updated a task'
+
+      if ('title' in (msg.new_details || {})) {
+        actorName = owner.value?.name || 'Project owner'
+        actionText = 'updated Task title'
+      } else if ('status' in (msg.new_details || {})) {
+        actorName = getMemberNameByEmail(currentTask?.assignee_email)
+        actionText = 'updated Task status'
+      }
+
+      alertInfo(
+          'Attention!',
+          `${actorName} ${actionText}`
+      )
+    }
+  }
+  catch (e) {
+    console.warn('[ProjectPage WS] failed to parse message')
+  }
+}
+
 onMounted(() => {
-  subscribe(`project:${projectId.value}`)
+  socket = connectWS(() => {
+    subscribe(`project:${projectId.value}`)
+  })
+
+  socket?.addEventListener('message', handleProjectMessage)
 })
+
+onBeforeUnmount(() => {
+  socket?.removeEventListener('message', handleProjectMessage)
+})
+
 </script>
 
 <template>
