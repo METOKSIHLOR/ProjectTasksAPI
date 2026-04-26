@@ -29,6 +29,16 @@ async def get_current_user(session_id: str | None):
 
     return user_id
 
+async def session_watcher(websocket: WebSocket, session_id: str):
+    while True:
+        await asyncio.sleep(30)
+
+        try:
+            await get_current_user(session_id)
+        except UserNotAuthorizedException:
+            await manager.disconnect_all(websocket)
+            break
+
 
 @dataclass
 class UserAccessCache:
@@ -223,6 +233,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Cookie(None
     await websocket.accept()
     await manager.register(websocket)
 
+    watcher_task = asyncio.create_task(
+        session_watcher(websocket, session_id)
+    )
+
     await manager.connect(websocket, [f"user:{user_id}"])
 
     try:
@@ -293,4 +307,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Cookie(None
                         {"success": False, "error": "Invalid action"},
                     )
     finally:
+        watcher_task.cancel()
+        try:
+            await watcher_task
+        except asyncio.CancelledError:
+            pass
+
         await manager.disconnect_all(websocket)
