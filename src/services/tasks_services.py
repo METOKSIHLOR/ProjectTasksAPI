@@ -138,5 +138,9 @@ class TasksService:
                                     "task_id": str(task.id),
                                     "new_details": dict_task})
 
+        await manager.send_to_room(f"task:{task_id}",
+                                   {"type": "task_update",
+                                   "new_details": dict_task})
+
         await self.repo.commit()
         return task
