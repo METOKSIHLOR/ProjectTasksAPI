@@ -51,7 +51,7 @@ import BaseCard from "./BaseCard.vue";
 
 .alert-container {
   position: fixed;
-  top: 70px;
+  top: 147px;
   right: 20px;
   display: flex;
   flex-direction: column;

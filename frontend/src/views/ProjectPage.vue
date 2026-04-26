@@ -20,7 +20,7 @@ import {
 import { currentUser } from '../store/auth_store.js'
 import { getStatusText, getStatusColor } from '../modules/statusModule.js'
 import {alertError, alertInfo, alertSuccess, parseApiError} from "../store/alert_store.js";
-import {connectWS, subscribe} from '../api/ws'
+import {connectWS, subscribe, unsubscribe} from '../api/ws'
 
 const router = useRouter()
 const route = useRoute()
@@ -264,8 +264,17 @@ function getMemberNameByEmail(email) {
 // RELOAD ON ROUTE CHANGE
 watch(
     () => route.params.projectId,
-    async (id) => {
+    async (id, oldId) => {
+      if (socket && oldId && oldId !== id) {
+        unsubscribe(`project:${oldId}`)
+      }
+
       projectId.value = id
+
+      if (socket && id && oldId !== id) {
+        subscribe(`project:${id}`)
+      }
+
       await loadProject()
     },
     { immediate: true }
@@ -276,76 +285,160 @@ function openRenameProject() {
   showRenameProject.value = true
 }
 
+function handleProjectUpdate(msg) {
+  if (msg?.project_id !== projectId.value || !project.value) return
+
+  project.value.name = msg.new_details
+
+  if (!isOwner.value) {
+    alertInfo(
+        'Attention!',
+        `${owner.value?.name || 'Project owner'} updated Project Name`
+    )
+  }
+}
+
+async function handleTaskCreate(msg) {
+  if (msg?.project_id && msg.project_id !== projectId.value) return
+  if (!project.value) return
+
+  await reloadTasks()
+
+  if (!isOwner.value) {
+    alertInfo(
+        'Attention!',
+        `${owner.value?.name || 'Project owner'} created a new task`
+    )
+  }
+}
+
+function handleTaskUpdate(msg) {
+  if (msg?.project_id && msg.project_id !== projectId.value) return
+  if (!project.value) return
+
+  const taskIndex = tasks.value.findIndex(task => task.id === msg.task_id)
+  const currentTask = taskIndex !== -1 ? tasks.value[taskIndex] : null
+
+  if (taskIndex !== -1 && msg.new_details && typeof msg.new_details === 'object') {
+    tasks.value[taskIndex] = {
+      ...tasks.value[taskIndex],
+      ...msg.new_details
+    }
+  }
+
+  let actorName = owner.value?.name || 'Project owner'
+  let actionText = 'updated a task'
+
+  if ('title' in (msg.new_details || {})) {
+    actorName = owner.value?.name || 'Project owner'
+    actionText = 'updated Task title'
+  } else if ('status' in (msg.new_details || {})) {
+    actorName = getMemberNameByEmail(currentTask?.assignee_email)
+    actionText = 'updated Task status'
+  }
+
+  alertInfo(
+      'Attention!',
+      `${actorName} ${actionText}`
+  )
+}
+
+function handleTaskDelete(msg) {
+  if (msg?.project_id && msg.project_id !== projectId.value) return
+  if (!project.value) return
+
+  tasks.value = tasks.value.filter(task => task.id !== msg.task_id)
+
+  if (!isOwner.value) {
+    alertInfo(
+        'Attention!',
+        `${owner.value?.name || 'Project owner'} deleted a task`
+    )
+  }
+}
+
+async function handleMemberRemove(msg) {
+  if (msg?.project_id !== projectId.value || !project.value) return
+
+  const removedCurrentUser = msg.member_email === currentUser.value?.email
+
+  if (removedCurrentUser && !isOwner.value) {
+    alertInfo(
+        'Attention!',
+        `${owner.value?.name || 'Project owner'} removed you from this project`
+    )
+    await router.push('/')
+    return
+  }
+
+  if (isOwner.value) {
+    members.value = members.value.filter(member => member.email !== msg.member_email)
+    alertInfo(
+        'Attention!',
+        `${owner.value?.name || 'Project owner'} removed ${msg.member_email} from the project`
+    )
+  }
+}
+
+async function handleProjectDelete(msg) {
+  if (msg?.project_id !== projectId.value || !project.value) return
+
+  if (!isOwner.value) {
+    alertInfo(
+        'Attention!',
+        `${owner.value?.name || 'Project owner'} deleted this project`
+    )
+    await router.push('/')
+  }
+}
+
 async function handleProjectMessage(event) {
   try {
     const msg = JSON.parse(event.data)
 
-    if (msg?.type === 'project_update' && msg.project_id === projectId.value && project.value) {
-      if (isOwner.value) {
-        return
-      }
+    switch (msg?.type) {
+      case 'project_update':
+        handleProjectUpdate(msg)
+        break
 
-      project.value.name = msg.new_details
-      alertInfo(
-          'Attention!',
-          `${owner.value?.name || 'Project owner'} updated Project Name`
-      )
+      case 'task_create':
+        await handleTaskCreate(msg)
+        break
+
+      case 'task_update':
+        handleTaskUpdate(msg)
+        break
+
+      case 'task_delete':
+        handleTaskDelete(msg)
+        break
+
+      case 'member_remove':
+        await handleMemberRemove(msg)
+        break
+
+      case 'project_delete':
+        await handleProjectDelete(msg)
+        break
     }
-
-    if (msg?.type === 'task_delete' && project.value) {
-      if (isOwner.value) {
-        return
-      }
-
-      await reloadTasks()
-      alertInfo(
-          'Attention!',
-          `${owner.value?.name || 'Project owner'} deleted a task`
-      )
-    }
-
-    if (msg?.type === 'task_update' && project.value) {
-      const taskIndex = tasks.value.findIndex(task => task.id === msg.task_id)
-      const currentTask = taskIndex !== -1 ? tasks.value[taskIndex] : null
-
-      if (taskIndex !== -1 && msg.new_details && typeof msg.new_details === 'object') {
-        tasks.value[taskIndex] = {
-          ...tasks.value[taskIndex],
-          ...msg.new_details
-        }
-      }
-
-      let actorName = owner.value?.name || 'Project owner'
-      let actionText = 'updated a task'
-
-      if ('title' in (msg.new_details || {})) {
-        actorName = owner.value?.name || 'Project owner'
-        actionText = 'updated Task title'
-      } else if ('status' in (msg.new_details || {})) {
-        actorName = getMemberNameByEmail(currentTask?.assignee_email)
-        actionText = 'updated Task status'
-      }
-
-      alertInfo(
-          'Attention!',
-          `${actorName} ${actionText}`
-      )
-    }
-  }
-  catch (e) {
+  } catch (e) {
     console.warn('[ProjectPage WS] failed to parse message')
   }
 }
 
-onMounted(() => {
-  socket = connectWS(() => {
+onMounted(async () => {
+  try {
+    socket = await connectWS()
     subscribe(`project:${projectId.value}`)
-  })
-
-  socket?.addEventListener('message', handleProjectMessage)
+    socket?.addEventListener('message', handleProjectMessage)
+  }
+  catch (err) {
+    console.error('[ProjectPage WS] failed to connect', err)
+  }
 })
 
 onBeforeUnmount(() => {
+  unsubscribe(`project:${projectId.value}`)
   socket?.removeEventListener('message', handleProjectMessage)
 })
 
