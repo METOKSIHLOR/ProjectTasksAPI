@@ -45,7 +45,6 @@ export function connectWS() {
         }
 
         socket.onmessage = (event) => {
-
             try {
                 const msg = JSON.parse(event.data)
                 console.log('[WS PARSED]', msg)
@@ -54,32 +53,6 @@ export function connectWS() {
                     success: msg?.success ?? null,
                     payload: msg
                 })
-
-                switch (msg?.type) {
-                    case 'task_create':
-                        console.log('[WS TASK CREATE]', msg)
-                        break
-
-                    case 'task_update':
-                        console.log('[WS TASK UPDATE]', msg)
-                        break
-
-                    case 'task_delete':
-                        console.log('[WS TASK DELETE]', msg)
-                        break
-
-                    case 'project_update':
-                        console.log('[WS PROJECT UPDATE]', msg)
-                        break
-
-                    case 'member_remove':
-                        console.log('[WS MEMBER REMOVE]', msg)
-                        break
-
-                    case 'project_delete':
-                        console.log('[WS PROJECT DELETE]', msg)
-                        break
-                }
             } catch (e) {
                 console.warn('[WS] non-json message')
             }
