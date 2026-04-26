@@ -34,7 +34,7 @@ class CommentsServices:
                                    {"type": "comment_create",
                                     "task_id": str(task_id),
                                     "author_email": comment.author.email,
-                                    "created_at": comment.created_at,})
+                                    "created_at": comment.created_at.isoformat(),})
 
         return comment
 
