@@ -25,7 +25,7 @@ import {connectWS, subscribe, unsubscribe} from '../api/ws'
 const router = useRouter()
 const route = useRoute()
 
-// STATE
+// VARIABLES
 const projectId = ref(route.params.projectId)
 const project = ref(null)
 const tasks = ref([])
@@ -33,33 +33,24 @@ const members = ref([])
 const isOwner = ref(false)
 const loading = ref(true)
 
-// MODALS
 const showCreateTask = ref(false)
 const showAddMember = ref(false)
 const showRenameProject = ref(false)
+
+const layoutRef = ref(null)
+const toggleCollapse = ref(true)
+let socket = null
 
 const owner = computed(() =>
     members.value.find(m => m.role === 'owner')
 )
 
-// Ссылка на Layout
-const layoutRef = ref(null)
-const toggleCollapse = ref(true)
-let socket = null
-
-// Метод для вызова переключения
-function toggleLayoutStretch() {
-  layoutRef.value.toggleStretch()
-  toggleCollapse.value = !toggleCollapse.value
-}
-
-// FORMS
 const taskForm = [
   { name: 'title', label: 'Title', placeholder: 'Task title' },
   { name: 'description', label: 'Description', placeholder: 'Task description', type: 'textarea' },
   { name: 'assignee_email', label: 'Task performer', type: 'select', options: [] }
 ]
-// Схема валидации для создания задачи в проекте
+
 const createTaskSchema = yup.object({
   title: yup
       .string()
@@ -79,18 +70,17 @@ const createTaskSchema = yup.object({
       .required('Performer email is required')
 })
 
-// Add member
 const memberForm = [
   { name: 'email', label: 'User email', placeholder: 'User email' }
 ]
+
 const addMemberSchema = yup.object({
   email: yup
       .string()
-      .email('Invalid email format')  // Проверка на корректность формата почты
-      .required('Email is required')  // Почта обязательна
+      .email('Invalid email format')
+      .required('Email is required')
 })
 
-// Rename project
 const renameForm = [
   {
     name: 'name',
@@ -99,7 +89,7 @@ const renameForm = [
     value: ''
   }
 ]
-// Схема валидации для переименования проекта
+
 const renameProjectSchema = yup.object({
   name: yup
       .string()
@@ -108,7 +98,7 @@ const renameProjectSchema = yup.object({
       .required('Project name is required')
 })
 
-// DATA LOADING
+// API
 async function loadProject() {
   loading.value = true
   try {
@@ -129,13 +119,11 @@ async function loadProject() {
   catch (err) {
     const { title, message } = parseApiError(err)
     alertError(title, message)
-
   } finally {
     loading.value = false
   }
 }
 
-// PROJECT ACTIONS
 async function renameProject({ data, onSuccess, onError }) {
   try {
     await updateProject(projectId.value, { name: data.name })
@@ -154,9 +142,9 @@ async function renameProject({ data, onSuccess, onError }) {
   }
 }
 
-// TASK ACTIONS
 async function addTask({ data, onSuccess, onError }) {
   if (!isOwner.value) return
+
   try {
     const payload = {
       title: data.title,
@@ -178,8 +166,10 @@ async function addTask({ data, onSuccess, onError }) {
     alertError(title, message)
   }
 }
+
 async function removeTask(id) {
   if (!isOwner.value) return
+
   try {
     await deleteTask(projectId.value, id)
     tasks.value = tasks.value.filter(t => t.id !== id)
@@ -194,9 +184,9 @@ async function removeTask(id) {
   }
 }
 
-// MEMBER ACTIONS
 async function addMember({ data, onSuccess, onError }) {
   if (!isOwner.value) return
+
   try {
     await createProjectMember(projectId.value, data.email)
     onSuccess()
@@ -215,6 +205,7 @@ async function addMember({ data, onSuccess, onError }) {
 
 async function removeMember(member) {
   if (!isOwner.value || member.email === currentUser.value?.email) return
+
   try {
     await deleteProjectMember(projectId.value, member.email)
     members.value = members.value.filter(m => m.email !== member.email)
@@ -229,52 +220,7 @@ async function removeMember(member) {
   }
 }
 
-// NAVIGATION
-function goBack() {
-  router.push('/')
-}
-function goToTask(id) {
-  router.push(`/projects/${projectId.value}/tasks/${id}`)
-}
-
-// HELPERS
-function getMemberName(member) {
-  return member.email === currentUser.value?.email
-      ? currentUser.value?.name
-      : member.name
-}
-
-function getMemberNameByEmail(email) {
-  const member = members.value.find(m => m.email === email)
-  return member?.email === currentUser.value?.email
-      ? currentUser.value?.name
-      : member?.name || email || 'Someone'
-}
-
-// RELOAD ON ROUTE CHANGE
-watch(
-    () => route.params.projectId,
-    async (id, oldId) => {
-      if (socket && oldId && oldId !== id) {
-        unsubscribe(`project:${oldId}`)
-      }
-
-      projectId.value = id
-
-      if (socket && id && oldId !== id) {
-        subscribe(`project:${id}`)
-      }
-
-      await loadProject()
-    },
-    { immediate: true }
-)
-
-function openRenameProject() {
-  renameForm[0].value = project.value?.name || ''
-  showRenameProject.value = true
-}
-
+// WEBSOCKETS
 function handleProjectUpdate(msg) {
   if (msg?.project_id !== projectId.value || !project.value) return
 
@@ -313,29 +259,35 @@ function handleTaskUpdate(msg) {
 
   const taskIndex = tasks.value.findIndex(task => task.id === msg.task_id)
   const currentTask = taskIndex !== -1 ? tasks.value[taskIndex] : null
+  const details = msg.new_details || {}
 
-  if (taskIndex !== -1 && msg.new_details && typeof msg.new_details === 'object') {
+  if (taskIndex !== -1 && typeof details === 'object') {
     tasks.value[taskIndex] = {
       ...tasks.value[taskIndex],
-      ...msg.new_details
+      ...details
     }
   }
 
   let actorName = owner.value?.name || 'Project owner'
   let actionText = 'updated a task'
+  let shouldShowAlert = true
 
-  if ('title' in (msg.new_details || {})) {
+  if ('title' in details) {
     actorName = owner.value?.name || 'Project owner'
     actionText = 'updated Task title'
-  } else if ('status' in (msg.new_details || {})) {
+  } else if ('status' in details) {
     actorName = getMemberNameByEmail(currentTask?.assignee_email)
     actionText = 'updated Task status'
+  } else if ('description' in details) {
+    shouldShowAlert = false
   }
 
-  alertInfo(
-      'Attention!',
-      `${actorName} ${actionText}`
-  )
+  if (shouldShowAlert) {
+    alertInfo(
+        'Attention!',
+        `${actorName} ${actionText}`
+    )
+  }
 }
 
 function handleTaskDelete(msg) {
@@ -387,6 +339,30 @@ async function handleProjectDelete(msg) {
   }
 }
 
+function handleInviteAccept(msg) {
+  if (!project.value || !isOwner.value) return
+
+  const memberExists = members.value.some(member => member.email === msg.user_email)
+  if (memberExists) return
+
+  members.value.push({
+    email: msg.user_email,
+    name: msg.user_name,
+    role: msg.user_role
+  })
+
+  const assigneeField = taskForm.find(field => field.name === 'assignee_email')
+  assigneeField?.options.push({
+    label: `${msg.user_name} (${msg.user_email})`,
+    value: msg.user_email
+  })
+
+  alertInfo(
+      'Attention!',
+      `${msg.user_name} joined the project`
+  )
+}
+
 async function handleProjectMessage(event) {
   try {
     const msg = JSON.parse(event.data)
@@ -415,12 +391,69 @@ async function handleProjectMessage(event) {
       case 'project_delete':
         await handleProjectDelete(msg)
         break
+
+      case 'invite_accept':
+        handleInviteAccept(msg)
+        break
     }
   } catch (e) {
     console.warn('[ProjectPage WS] failed to parse message')
   }
 }
 
+// NAVIGATION
+function goBack() {
+  router.push('/')
+}
+
+function goToTask(id) {
+  router.push(`/projects/${projectId.value}/tasks/${id}`)
+}
+
+// HELPERS
+function toggleLayoutStretch() {
+  layoutRef.value.toggleStretch()
+  toggleCollapse.value = !toggleCollapse.value
+}
+
+function openRenameProject() {
+  renameForm[0].value = project.value?.name || ''
+  showRenameProject.value = true
+}
+
+function getMemberName(member) {
+  return member.email === currentUser.value?.email
+      ? currentUser.value?.name
+      : member.name
+}
+
+function getMemberNameByEmail(email) {
+  const member = members.value.find(m => m.email === email)
+  return member?.email === currentUser.value?.email
+      ? currentUser.value?.name
+      : member?.name || email || 'Someone'
+}
+
+// WATCHERS
+watch(
+    () => route.params.projectId,
+    async (id, oldId) => {
+      if (socket && oldId && oldId !== id) {
+        unsubscribe(`project:${oldId}`)
+      }
+
+      projectId.value = id
+
+      if (socket && id && oldId !== id) {
+        subscribe(`project:${id}`)
+      }
+
+      await loadProject()
+    },
+    { immediate: true }
+)
+
+// LIFECYCLE
 onMounted(async () => {
   try {
     socket = await connectWS()
@@ -610,7 +643,6 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 
-/* Анимация удаления задачи */
 .task-leave-from {
   opacity: 1;
   transform: scale(1);
@@ -626,7 +658,6 @@ onBeforeUnmount(() => {
   transform: scale(1.2);
 }
 
-/* Поднятие оставшихся */
 .task-move {
   transition: all 0.5s ease;
 }

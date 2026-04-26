@@ -1,5 +1,5 @@
 <script setup>
-import {ref, watch, computed, onMounted, reactive, nextTick} from 'vue'
+import {ref, watch, computed, onMounted, onBeforeUnmount, reactive, nextTick} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DashboardLayout from '../components/Layout.vue'
 import BaseButton from '../components/BaseButton.vue'
@@ -26,6 +26,7 @@ import {
   getStatusButtonColor
 } from '../modules/statusModule.js'
 import {alertError, alertInfo, parseApiError} from "../store/alert_store.js";
+import {connectWS, subscribe, unsubscribe} from '../api/ws'
 
 /* router */
 const router = useRouter()
@@ -42,6 +43,7 @@ const comments = ref([])
 /* ui state */
 const loading = ref(true)
 const layoutRef = ref(null)
+let socket = null
 
 /* modals */
 const showRenameTask = ref(false)
@@ -290,16 +292,86 @@ function goBack() {
   router.push(`/projects/${projectId.value}`)
 }
 
+/* websocket */
+function handleTaskDeleteMessage(msg) {
+  console.log('[TaskPage WS TASK DELETE]', msg)
+}
+
+function handleCommentCreateMessage(msg) {
+  console.log('[TaskPage WS COMMENT CREATE]', msg)
+}
+
+function handleCommentUpdateMessage(msg) {
+  console.log('[TaskPage WS COMMENT UPDATE]', msg)
+}
+
+function handleCommentDeleteMessage(msg) {
+  if (msg?.task_id !== taskId.value) return
+
+  comments.value = comments.value.filter(comment => comment.id !== msg.comment_id)
+}
+
+async function handleTaskMessage(event) {
+  try {
+    const msg = JSON.parse(event.data)
+
+    switch (msg?.type) {
+      case 'task_delete':
+        handleTaskDeleteMessage(msg)
+        break
+
+      case 'comment_create':
+        handleCommentCreateMessage(msg)
+        break
+
+      case 'comment_update':
+        handleCommentUpdateMessage(msg)
+        break
+
+      case 'comment_delete':
+        handleCommentDeleteMessage(msg)
+        break
+    }
+  } catch (e) {
+    console.warn('[TaskPage WS] failed to parse message')
+  }
+}
+
 /* watch route */
 watch(
     () => route.params,
-    params => {
+    async (params, oldParams) => {
+      if (socket && oldParams?.taskId && oldParams.taskId !== params.taskId) {
+        unsubscribe(`task:${oldParams.taskId}`)
+      }
+
       projectId.value = params.projectId
       taskId.value = params.taskId
-      loadTaskAndComments()
+
+      if (socket && oldParams?.taskId !== params.taskId) {
+        subscribe(`task:${params.taskId}`)
+      }
+
+      await loadTaskAndComments()
     },
     { immediate: true }
 )
+
+onMounted(async () => {
+  try {
+    socket = await connectWS()
+    subscribe(`task:${taskId.value}`)
+    socket?.addEventListener('message', handleTaskMessage)
+  }
+  catch (err) {
+    console.error('[TaskPage WS] failed to connect', err)
+  }
+})
+
+onBeforeUnmount(() => {
+  unsubscribe(`task:${taskId.value}`)
+  socket?.removeEventListener('message', handleTaskMessage)
+})
 </script>
 
 <template>

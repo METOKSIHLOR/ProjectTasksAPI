@@ -1,5 +1,5 @@
 <script setup>
-import {defineProps, ref, watch} from 'vue';
+import {defineProps, onBeforeUnmount, onMounted, ref, watch} from 'vue';
 import { useRouter } from 'vue-router';
 import {clearCurrentUser, currentUser} from '../store/auth_store.js';
 import ModalWindow from './ModalWindow.vue';
@@ -9,6 +9,7 @@ import {apiAcceptInvite, apiDeclineInvite, getUserInvites, logoutUser, updateCur
 import BaseButton from "./BaseButton.vue";
 import BaseCard from "./BaseCard.vue";
 import BaseLoader from "./BaseLoader.vue";
+import {connectWS} from '../api/ws'
 import * as yup from 'yup'
 
 const props = defineProps({
@@ -49,6 +50,7 @@ const showChangeName = ref(false)
 
 const invitesLoading = ref(false)
 const invites = ref([])
+let socket = null
 
 async function loadInvites() {
   showInvites.value = true
@@ -63,6 +65,16 @@ async function loadInvites() {
   }
   finally {
     invitesLoading.value = false
+  }
+}
+
+async function refreshInvites() {
+  try {
+    invites.value = await getUserInvites()
+  }
+  catch (err) {
+    const { title, message } = parseApiError(err)
+    alertError(title, message)
   }
 }
 
@@ -129,6 +141,39 @@ watch(invites, (val) => {
   if (val.length > 0) {
     showEmptyState.value = false
   }
+})
+
+function handleInviteCreateMessage(msg) {
+  alertInfo('Attention!', 'You received a new project invite')
+  refreshInvites()
+}
+
+async function handleUserMessage(event) {
+  try {
+    const msg = JSON.parse(event.data)
+
+    switch (msg?.type) {
+      case 'invite_create':
+        handleInviteCreateMessage(msg)
+        break
+    }
+  } catch (e) {
+    console.warn('[Sidebar WS] failed to parse message')
+  }
+}
+
+onMounted(async () => {
+  try {
+    socket = await connectWS()
+    socket?.addEventListener('message', handleUserMessage)
+  }
+  catch (err) {
+    console.error('[Sidebar WS] failed to connect', err)
+  }
+})
+
+onBeforeUnmount(() => {
+  socket?.removeEventListener('message', handleUserMessage)
 })
 </script>
 
