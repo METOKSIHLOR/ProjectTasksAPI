@@ -311,8 +311,8 @@ async function handleMemberRemove(msg) {
 
   if (removedCurrentUser && !isOwner.value) {
     alertInfo(
-        'Attention!',
-        `${owner.value?.name || 'Project owner'} removed you from this project`
+        'Вжух!',
+        `и ${owner.value?.name || 'Project owner'} выгнал тебя из Проекта`
     )
     await router.push('/')
     return
@@ -332,8 +332,8 @@ async function handleProjectDelete(msg) {
 
   if (!isOwner.value) {
     alertInfo(
-        'Attention!',
-        `${owner.value?.name || 'Project owner'} deleted this project`
+        'Вжух!',
+        `и ${owner.value?.name || 'Project owner'} удалил весь Проект`
     )
     await router.push('/')
   }

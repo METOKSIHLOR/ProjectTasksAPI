@@ -295,8 +295,8 @@ function goBack() {
 /* websocket */
 async function handleTaskDeleteMessage(msg) {
     alertInfo(
-        'Attention!',
-        `${msg.value?.name || 'Project owner'} deleted this Task`
+        'Вжух!',
+        `${msg.value?.name || ''}И задачи больше нет`
     )
     await router.push('/')
 }
