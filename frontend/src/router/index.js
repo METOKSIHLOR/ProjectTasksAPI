@@ -5,6 +5,7 @@ import ProjectNotFound from '../views/PageNotFound.vue'
 import Register from '../views/Register.vue'
 import Login from '../views/Login.vue'
 import TaskPage from '../views/TaskPage.vue'
+import { connectWS } from '../api/ws.js'
 import { getCurrentUser } from '../api/api.js'
 import {currentUser, setCurrentUser, setUnauthorized} from '../store/auth_store.js'
 import Settings from "../views/Settings.vue";
@@ -50,6 +51,23 @@ router.beforeEach(async (to, from, next) => {
     // Если не авторизован и страница защищённая
     if (currentUser.value === false && authRequired) {
         return next('/login')
+    }
+
+    next()
+})
+
+router.beforeEach(async (to, from, next) => {
+    const publicPages = ['/login', '/register', '/password-recover']
+    const authRequired = !publicPages.includes(to.path)
+
+    if (!authRequired || !currentUser.value) {
+        return next()
+    }
+
+    try {
+        await connectWS()
+    } catch (err) {
+        console.error('[WS GUARD] failed to connect', err)
     }
 
     next()

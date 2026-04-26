@@ -38,7 +38,8 @@ const EditNameForm = [
 const EditNameSchema = yup.object({
   newName: yup
       .string()
-      .min(3, 'Name must be at least 3 characters') // Имя не менее 3 символов
+      .min(3, 'Name must be at least 3 characters')
+      .max(25, 'Comment must be at most 25 characters')
       .required('Name is required')
 })
 
