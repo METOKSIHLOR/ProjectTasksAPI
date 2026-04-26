@@ -25,14 +25,16 @@ class CommentsServices:
             # проверяем существует ли такой комментарий в таске, чтоб на него отвечать
             await self.get_comment_belong_to_task(project_id=project_id, task_id=task_id, comment_id=comment.replied_to)
 
-        await self.repo.create_comment(comment)
+        created_comment = await self.repo.create_comment(comment)
 
         await self.repo.commit()
         await self.repo.session.refresh(comment, attribute_names=["author"])
 
         await manager.send_to_room(f"task:{task_id}",
                                    {"type": "comment_create",
-                                    "task_id": str(task_id),
+                                    "comment_id": str(created_comment.id),
+                                    "text": comment.text,
+                                    "replied_to": str(comment.replied_to),
                                     "author_email": comment.author.email,
                                     "created_at": comment.created_at.isoformat(),})
 
