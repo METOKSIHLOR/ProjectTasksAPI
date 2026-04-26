@@ -32,6 +32,11 @@ class ProjectRepository:
         project = await self.session.execute(stmt)
         return project.scalar_one_or_none()
 
+    async def get_project_by_id_with_tasks(self, project_id: UUID):
+        stmt = select(Project).where(Project.id == project_id).options(selectinload(Project.tasks))
+        project = await self.session.execute(stmt)
+        return project.scalar_one_or_none()
+
     async def delete_project(self, project: Project):
         await self.session.delete(project)
         await self.session.flush()
