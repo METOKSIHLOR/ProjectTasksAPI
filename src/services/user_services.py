@@ -104,11 +104,13 @@ class UserServices:
         # если пользователь принимает приглашение добавляем его
         if solution.status == "accepted":
             project_repo = ProjectRepository(session=self.repo.session)
-            await project_repo.add_member(ProjectMember(user_id=invite.user_id, project_id=invite.project_id,))
+            member = await project_repo.add_member(ProjectMember(user_id=invite.user_id, project_id=invite.project_id,))
 
             await manager.send_to_room(f"project:{invite.project_id}",
                                        {"type": "invite_accept",
-                                        "user_email": invite.user.email,})
+                                        "user_email": invite.user.email,
+                                        "user_name": invite.user.name,
+                                        "user_role": member.role})
 
         await self.repo.delete_user_invite(invite=invite)
         await self.repo.commit()
