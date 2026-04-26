@@ -34,7 +34,7 @@ class CommentsServices:
                                    {"type": "comment_create",
                                     "comment_id": str(created_comment.id),
                                     "text": comment.text,
-                                    "replied_to": str(comment.replied_to),
+                                    "replied_to": str(comment.replied_to) if comment.replied_to is not None else None,
                                     "author_name": comment.author.name,
                                     "author_email": comment.author.email,
                                     "created_at": comment.created_at.isoformat(),})
