@@ -135,16 +135,6 @@ async function loadProject() {
   }
 }
 
-async function reloadTasks() {
-  try {
-    tasks.value = await getTasks(projectId.value)
-  }
-  catch (err) {
-    const { title, message } = parseApiError(err)
-    alertError(title, message)
-  }
-}
-
 // PROJECT ACTIONS
 async function renameProject({ data, onSuccess, onError }) {
   try {
@@ -302,7 +292,12 @@ async function handleTaskCreate(msg) {
   if (msg?.project_id && msg.project_id !== projectId.value) return
   if (!project.value) return
 
-  await reloadTasks()
+  tasks.value.push({
+    id: msg.task_id,
+    title: msg.title,
+    status: msg.status,
+    assignee_email: msg.assignee_email
+  })
 
   if (!isOwner.value) {
     alertInfo(
