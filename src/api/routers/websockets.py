@@ -15,13 +15,18 @@ from src.db.repositories.tasks_repo import TasksRepository
 
 router = APIRouter()
 
-MAX_ROOMS_PER_USER = 5
-MAX_ROOMS_PER_MESSAGE = 50
-WRITE_QUEUE_SIZE = 200
-SEND_TIMEOUT_SECONDS = 5
+# Ограничения для защиты от злоупотреблений
+MAX_ROOMS_PER_USER = 5          # сколько комнат может слушать один клиент
+MAX_ROOMS_PER_MESSAGE = 50      # сколько комнат можно передать в одном сообщении
+WRITE_QUEUE_SIZE = 200          # буфер исходящих сообщений на клиента
+SEND_TIMEOUT_SECONDS = 5        # таймаут отправки в websocket
 
 
 async def get_current_user(session_id: str | None):
+    """
+    Проверяет сессию в Redis и возвращает user_id.
+    Если сессии нет - считаем пользователя неавторизованным.
+    """
     user_id = await storage.get(f"session_id:{session_id}")
 
     if user_id is None:
@@ -29,19 +34,33 @@ async def get_current_user(session_id: str | None):
 
     return user_id
 
+
 async def session_watcher(websocket: WebSocket, session_id: str):
+    """
+    Фоновая задача, которая периодически проверяет валидность сессии.
+
+    Нужна потому, что WebSocket соединение живёт долго,
+    а сессия может истечь или быть удалена (logout).
+    """
     while True:
         await asyncio.sleep(30)
 
         try:
             await get_current_user(session_id)
         except UserNotAuthorizedException:
+            # Если сессия больше невалидна - полностью отключаем клиента
             await manager.disconnect_all(websocket)
+            await websocket.close(code=1008)
             break
 
 
 @dataclass
 class UserAccessCache:
+    """
+    Кэш прав доступа в рамках одного запроса subscribe.
+
+    Позволяет не ходить в БД повторно для одних и тех же проектов/тасков.
+    """
     projects: dict[UUID, bool] = field(default_factory=dict)
     tasks: dict[UUID, UUID | None] = field(default_factory=dict)
 
@@ -53,6 +72,14 @@ async def check_user_access(
     task_repo: TasksRepository,
     cache: UserAccessCache,
 ):
+    """
+    Проверяет, имеет ли пользователь доступ к комнате.
+
+    Формат комнаты:
+    - user:<uuid>
+    - project:<uuid>
+    - task:<uuid>
+    """
     try:
         resource_type, resource_id = room.split(":", 1)
         resource_uuid = UUID(resource_id)
@@ -60,12 +87,15 @@ async def check_user_access(
 
         match resource_type:
             case "user":
+                # пользователь может слушать только самого себя
                 return resource_uuid == user_uuid
 
             case "project":
+                # проверяем кэш
                 if resource_uuid in cache.projects:
                     return cache.projects[resource_uuid]
 
+                # проверяем членство в проекте
                 member = await project_repo.get_project_member(
                     project_id=resource_uuid,
                     member_id=user_uuid,
@@ -75,6 +105,7 @@ async def check_user_access(
                 return has_access
 
             case "task":
+                # сначала получаем project_id таски (с кэшем)
                 if resource_uuid not in cache.tasks:
                     task = await task_repo.get_task_by_id(task_id=resource_uuid)
                     cache.tasks[resource_uuid] = task.project_id if task else None
@@ -83,6 +114,7 @@ async def check_user_access(
                 if project_id is None:
                     return False
 
+                # проверяем доступ к проекту
                 if project_id in cache.projects:
                     return cache.projects[project_id]
 
@@ -98,25 +130,43 @@ async def check_user_access(
                 return False
 
     except (TypeError, ValueError):
+        # если формат комнаты битый - просто запрещаем
         return False
 
 
 @dataclass
 class ClientConnection:
-    rooms: set[str] = field(default_factory=set)
+    """
+    Состояние одного WebSocket клиента.
+    """
+    rooms: set[str] = field(default_factory=set)  # комнаты, на которые подписан клиент
     send_queue: asyncio.Queue[dict[str, Any]] = field(
         default_factory=lambda: asyncio.Queue(maxsize=WRITE_QUEUE_SIZE),
-    )
-    lock: asyncio.Lock = field(default_factory=asyncio.Lock)
-    writer_task: asyncio.Task | None = None
+    )  # очередь сообщений на отправку
+    lock: asyncio.Lock = field(default_factory=asyncio.Lock)  # защита от гонок
+    writer_task: asyncio.Task | None = None  # задача отправки сообщений
 
 
 class ConnectionManager:
+    """
+    Управляет всеми WebSocket соединениями и подписками на комнаты.
+    """
+
     def __init__(self):
         self.rooms: defaultdict[str, set[WebSocket]] = defaultdict(set)
+        # room -> set(websockets)
+
         self.clients: dict[WebSocket, ClientConnection] = {}
+        # websocket -> состояние клиента
 
     async def _writer(self, websocket: WebSocket):
+        """
+        Отдельная задача на клиента, которая отправляет сообщения из очереди.
+
+        Нужна чтобы:
+        - не блокировать основной loop
+        - контролировать таймауты отправки
+        """
         client = self.clients.get(websocket)
         if client is None:
             return
@@ -132,9 +182,13 @@ class ConnectionManager:
                     timeout=SEND_TIMEOUT_SECONDS,
                 )
         except Exception:
+            # при любой ошибке - полностью отключаем клиента
             await self.disconnect_all(websocket)
 
     async def register(self, websocket: WebSocket):
+        """
+        Регистрирует новый WebSocket и запускает writer.
+        """
         if websocket in self.clients:
             return
 
@@ -143,6 +197,9 @@ class ConnectionManager:
         self.clients[websocket] = client
 
     async def connect(self, websocket: WebSocket, rooms: list[str]):
+        """
+        Подписывает клиента на комнаты.
+        """
         client = self.clients.get(websocket)
         if client is None:
             return {"success": False, "error": "Connection is not registered."}
@@ -154,6 +211,7 @@ class ConnectionManager:
             current_rooms = client.rooms
             new_rooms = set(rooms) - current_rooms
 
+            # проверка лимита
             if len(new_rooms) + len(current_rooms) > MAX_ROOMS_PER_USER:
                 return {
                     "success": False,
@@ -170,6 +228,9 @@ class ConnectionManager:
             }
 
     async def disconnect(self, websocket: WebSocket, rooms: list[str]):
+        """
+        Отписывает клиента от указанных комнат.
+        """
         client = self.clients.get(websocket)
         if client is None:
             return
@@ -187,6 +248,11 @@ class ConnectionManager:
                     del self.rooms[room]
 
     async def disconnect_all(self, websocket: WebSocket):
+        """
+        Полностью удаляет клиента:
+        - отписывает от всех комнат
+        - останавливает writer
+        """
         client = self.clients.get(websocket)
         if client is None:
             return
@@ -200,10 +266,15 @@ class ConnectionManager:
                         del self.rooms[room]
                 client.rooms.discard(room)
 
-        client.writer_task.cancel()
+        if client.writer_task:
+            client.writer_task.cancel()
+
         self.clients.pop(websocket, None)
 
     async def send_to_ws(self, websocket: WebSocket, message: dict[str, Any]):
+        """
+        Добавляет сообщение в очередь клиента.
+        """
         client = self.clients.get(websocket)
         if client is None:
             return
@@ -211,9 +282,13 @@ class ConnectionManager:
         try:
             client.send_queue.put_nowait(message)
         except asyncio.QueueFull:
+            # если клиент не успевает читать - отключаем
             await self.disconnect_all(websocket)
 
     async def send_to_room(self, room: str, message: dict[str, Any]):
+        """
+        Рассылает сообщение всем клиентам в комнате.
+        """
         print("sending to room", room, message)
         for ws in list(self.rooms.get(room, [])):
             await self.send_to_ws(ws, message)
@@ -224,6 +299,15 @@ manager = ConnectionManager()
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, session_id: str = Cookie(None)):
+    """
+    Основной endpoint WebSocket.
+
+    Поддерживает:
+    - subscribe
+    - unsubscribe
+    """
+
+    # первичная проверка сессии
     try:
         user_id = await get_current_user(session_id)
     except UserNotAuthorizedException:
@@ -233,10 +317,12 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Cookie(None
     await websocket.accept()
     await manager.register(websocket)
 
+    # запускаем watcher сессии
     watcher_task = asyncio.create_task(
         session_watcher(websocket, session_id)
     )
 
+    # автоматически подписываем на личную комнату
     await manager.connect(websocket, [f"user:{user_id}"])
 
     try:
@@ -268,6 +354,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Cookie(None
                 continue
 
             action = message.get("action")
+
+            # фильтруем только валидные строки вида "type:id"
             rooms = [
                 room
                 for room in set(message_rooms)
@@ -277,6 +365,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Cookie(None
             match action:
                 case "subscribe":
                     allowed_rooms: list[str] = []
+
                     if rooms:
                         async with sess.SessionFactory() as session:
                             project_repo = ProjectRepository(session)
@@ -306,11 +395,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = Cookie(None
                         websocket,
                         {"success": False, "error": "Invalid action"},
                     )
+
     finally:
+        # аккуратно останавливаем watcher
         watcher_task.cancel()
         try:
             await watcher_task
         except asyncio.CancelledError:
             pass
 
+        # полностью чистим соединение
         await manager.disconnect_all(websocket)
