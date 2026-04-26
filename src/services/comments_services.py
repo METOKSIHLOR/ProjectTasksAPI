@@ -35,6 +35,7 @@ class CommentsServices:
                                     "comment_id": str(created_comment.id),
                                     "text": comment.text,
                                     "replied_to": str(comment.replied_to),
+                                    "author_name": comment.author.name,
                                     "author_email": comment.author.email,
                                     "created_at": comment.created_at.isoformat(),})
 
