@@ -293,12 +293,28 @@ function goBack() {
 }
 
 /* websocket */
-function handleTaskDeleteMessage(msg) {
-  console.log('[TaskPage WS TASK DELETE]', msg)
+async function handleTaskDeleteMessage(msg) {
+    alertInfo(
+        'Attention!',
+        `${msg.value?.name || 'Project owner'} deleted this Task`
+    )
+    await router.push('/')
 }
 
-function handleCommentCreateMessage(msg) {
-  console.log('[TaskPage WS COMMENT CREATE]', msg)
+async function handleCommentCreateMessage(msg) {
+  if (msg?.author_email === currentUser.value?.email) return
+
+  comments.value.push({
+    id: msg.comment_id,
+    text: msg.text,
+    author_email: msg.author_email,
+    author_name: msg.author_name,
+    replied_to: msg.replied_to,
+    created_at: msg.created_at,
+    statusKey: parseStatusFromComment(msg.text)
+  })
+
+  await layoutRef.value?.scrollToBottomSmooth()
 }
 
 function handleCommentUpdateMessage(msg) {
@@ -306,8 +322,6 @@ function handleCommentUpdateMessage(msg) {
 }
 
 function handleCommentDeleteMessage(msg) {
-  if (msg?.task_id !== taskId.value) return
-
   comments.value = comments.value.filter(comment => comment.id !== msg.comment_id)
 }
 
@@ -317,11 +331,11 @@ async function handleTaskMessage(event) {
 
     switch (msg?.type) {
       case 'task_delete':
-        handleTaskDeleteMessage(msg)
+        await handleTaskDeleteMessage(msg)
         break
 
       case 'comment_create':
-        handleCommentCreateMessage(msg)
+        await handleCommentCreateMessage(msg)
         break
 
       case 'comment_update':
