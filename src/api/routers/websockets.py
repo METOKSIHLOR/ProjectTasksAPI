@@ -237,6 +237,8 @@ class ConnectionManager:
 
         async with client.lock:
             for room in rooms:
+                if room.split(":", 1)[0] == 'user':
+                   continue
                 sockets = self.rooms.get(room)
                 if not sockets:
                     continue
