@@ -43,7 +43,9 @@ class TasksService:
         await manager.send_to_room(f"project:{project_id}",
                                    {"type": "task_create",
                                     "title": task.title,
-                                    "assignee_id": str(task.assignee_id),})
+                                    "task_id": str(task.id),
+                                    "status": task.status,
+                                    "assignee_email": task.assignee_email,})
 
         return TaskInfoSchema(
             id=task.id,
