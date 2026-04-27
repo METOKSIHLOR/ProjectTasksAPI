@@ -4,8 +4,10 @@ import {currentUser} from '../store/auth_store.js'
 import {ref, nextTick, onMounted, onUnmounted, defineExpose } from 'vue'
 import Alert from "./Alert.vue";
 import Sidebar from "./Sidebar.vue";
+import {useRoute} from "vue-router";
 
 /* refs */
+const route = useRoute()
 const mainContainer = ref(null)
 const isMainExpanded = ref(true)  // Стейт для переключения блоков
 
@@ -100,7 +102,7 @@ defineExpose({
         </div>
       </div>
 
-      <div class="header-center">
+      <div v-if="route.name === 'task'" class="header-center">
         <slot name="header-center"/>
       </div>
 

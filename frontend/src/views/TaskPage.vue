@@ -179,12 +179,26 @@ async function addComment({ data, onSuccess, onError }) {
     onError()
   }
 }
-
 async function addStatusComment(statusKey) {
   const text = buildStatusComment(statusKey)
   const newC = await createComment(projectId.value, taskId.value, {text: text, replied_to: null})
   newC.statusKey = statusKey
   comments.value.push(newC)
+  await layoutRef.value?.scrollToBottomSmooth()
+}
+async function WS_addComment(msg) {
+  if (msg?.author_email === currentUser.value?.email) return
+
+  comments.value.push({
+    id: msg.comment_id,
+    text: msg.text,
+    author_email: msg.author_email,
+    author_name: msg.author_name,
+    replied_to: msg.replied_to,
+    created_at: msg.created_at,
+    statusKey: parseStatusFromComment(msg.text)
+  })
+
   await layoutRef.value?.scrollToBottomSmooth()
 }
 
@@ -199,6 +213,9 @@ async function removeComment(comment) {
     const { title, message } = parseApiError(err)
     alertError(title, message)
   }
+}
+function WS_removeComment(msg) {
+  comments.value = comments.value.filter(comment => comment.id !== msg.comment_id)
 }
 
 const REPLY = reactive({
@@ -298,31 +315,11 @@ async function handleTaskDeleteMessage(msg) {
         'Вжух!',
         `${msg.value?.name || ''}И задачи больше нет`
     )
-    await router.push('/')
-}
-
-async function handleCommentCreateMessage(msg) {
-  if (msg?.author_email === currentUser.value?.email) return
-
-  comments.value.push({
-    id: msg.comment_id,
-    text: msg.text,
-    author_email: msg.author_email,
-    author_name: msg.author_name,
-    replied_to: msg.replied_to,
-    created_at: msg.created_at,
-    statusKey: parseStatusFromComment(msg.text)
-  })
-
-  await layoutRef.value?.scrollToBottomSmooth()
+    await router.push(`/projects/${projectId.value}`)
 }
 
 function handleCommentUpdateMessage(msg) {
   console.log('[TaskPage WS COMMENT UPDATE]', msg)
-}
-
-function handleCommentDeleteMessage(msg) {
-  comments.value = comments.value.filter(comment => comment.id !== msg.comment_id)
 }
 
 async function handleTaskMessage(event) {
@@ -335,7 +332,7 @@ async function handleTaskMessage(event) {
         break
 
       case 'comment_create':
-        await handleCommentCreateMessage(msg)
+        await WS_addComment(msg)
         break
 
       case 'comment_update':
@@ -343,7 +340,7 @@ async function handleTaskMessage(event) {
         break
 
       case 'comment_delete':
-        handleCommentDeleteMessage(msg)
+        WS_removeComment(msg)
         break
     }
   } catch (e) {
