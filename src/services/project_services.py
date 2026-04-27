@@ -35,7 +35,7 @@ class ProjectServices:
 
         return project
 
-    async def delete_project(self, project_id: UUID):
+    async def delete_project(self, project_id: UUID, connection_id):
         project = await self.get_project_by_id_with_tasks(project_id)
         
         await self.repo.delete_project(project)
@@ -43,10 +43,12 @@ class ProjectServices:
 
         await manager.send_to_room(f"project:{project_id}",
                                    {"type": "project_delete",
-                                    "project_id": str(project_id)})
+                                    "project_id": str(project_id)},
+                                   sender_connection_id=connection_id)
         for task in project.tasks:
             await manager.send_to_room(f"task:{task.id}",
-                                       {"type": "project_delete"})
+                                       {"type": "project_delete"},
+                                       sender_connection_id=connection_id)
 
         return project
 
@@ -87,7 +89,7 @@ class ProjectServices:
         await self.repo.commit()
         return invite
 
-    async def remove_member(self, project_id: UUID, member_email, user_id: UUID):
+    async def remove_member(self, project_id: UUID, member_email, user_id: UUID, connection_id):
         member = await self.user_serv.get_user_by_email(email=member_email) # Получаем обьект пользователя по его почте
 
         if str(member.id) == str(user_id): # проверяем не пытается ли юзер удалить себя же
@@ -105,11 +107,12 @@ class ProjectServices:
                                    {"type": "member_remove",
                                     "project_id": str(project_id),
                                     "member_id": str(member.id),
-                                    "member_email": member_email})
+                                    "member_email": member_email},
+                                   sender_connection_id=connection_id)
 
         return member
 
-    async def update_project_name(self, project_id: UUID, name: str):
+    async def update_project_name(self, project_id: UUID, name: str, connection_id):
         project = await self.get_project_by_id(project_id=project_id)
         project = await self.repo.update_project_name(project=project, name=name)
         await self.repo.commit()
@@ -117,7 +120,8 @@ class ProjectServices:
         await manager.send_to_room(f"project:{project_id}",
                                    {"type": "project_update",
                                     "project_id": str(project_id),
-                                    "new_details": name})
+                                    "new_details": name},
+                                   sender_connection_id=connection_id)
 
         return project
 

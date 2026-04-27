@@ -19,7 +19,7 @@ class TasksService:
         self.project = ProjectServices(session)
         self.user_serv = UserServices(session=session)
 
-    async def create_task(self, project_id: UUID, task: CreateTaskSchema):
+    async def create_task(self, project_id: UUID, task: CreateTaskSchema, connection_id):
         # проверяем существует ли пользователь с такой почтой
         member = await self.user_serv.get_user_by_email(task.assignee_email)
 
@@ -45,7 +45,8 @@ class TasksService:
                                     "title": task.title,
                                     "task_id": str(task.id),
                                     "status": task.status,
-                                    "assignee_email": task.assignee_email,})
+                                    "assignee_email": task.assignee_email,},
+                                   sender_connection_id=connection_id,)
 
         return TaskInfoSchema(
             id=task.id,
@@ -82,20 +83,23 @@ class TasksService:
         tasks = await self.repo.get_project_tasks(project_id)
         return tasks
 
-    async def delete_task(self, task_id: UUID, project_id: UUID):
+    async def delete_task(self, task_id: UUID, project_id: UUID, connection_id):
         task = await self.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)
         await self.repo.delete_task(task)
 
         await manager.send_to_room(f"project:{project_id}",
                                    {"type": "task_delete",
-                                    "task_id": str(task.id)})
+                                    "task_id": str(task.id)},
+                                   sender_connection_id=connection_id,)
+
         await manager.send_to_room(f"task:{task_id}",
-                                   {"type": "task_delete"})
+                                   {"type": "task_delete"},
+                                   sender_connection_id=connection_id,)
 
         await self.repo.commit()
 
     async def update_task(
-        self, user_id: UUID, task_id: UUID, project_id: UUID, new_task: UpdateTaskSchema
+        self, user_id: UUID, task_id: UUID, project_id: UUID, new_task: UpdateTaskSchema, connection_id
     ):
         """функция позволяет исполняющему задачу обновлять только ее статус, а владельцу проекта все поля по желанию"""
 
@@ -136,11 +140,13 @@ class TasksService:
         await manager.send_to_room(f"project:{project_id}",
                                    {"type": "task_update",
                                     "task_id": str(task.id),
-                                    "new_details": dict_task})
+                                    "new_details": dict_task},
+                                   sender_connection_id=connection_id,)
 
         await manager.send_to_room(f"task:{task_id}",
                                    {"type": "task_update",
-                                   "new_details": dict_task})
+                                   "new_details": dict_task},
+                                   sender_connection_id=connection_id,)
 
         await self.repo.commit()
         return task

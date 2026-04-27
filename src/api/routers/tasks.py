@@ -1,7 +1,7 @@
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,10 +21,11 @@ router = APIRouter(prefix="/projects/{project_id}/tasks", tags=["tasks"])
 async def create_task(project_id: UUID,
                       task: CreateTaskSchema,
                       session: AsyncSession = Depends(get_session),
+                      x_connection_id: str | None = Header(None),
                       _: None = Depends(CheckUserPerms(["owner"]))) -> TaskInfoSchema:
     """Создание новой таски в указанном проекте по его айди, если пользователь является создателем проекта"""
     task_serv = TasksService(session)
-    task = await task_serv.create_task(project_id=project_id, task=task)
+    task = await task_serv.create_task(project_id=project_id, task=task, connection_id=x_connection_id)
     return task
 
 @router.get("", 
@@ -67,11 +68,12 @@ async def delete_task(
         project_id: UUID,
         task_id: UUID,
         session = Depends(get_session),
+        x_connection_id: str | None = Header(None),
         _: None = Depends(CheckUserPerms(["owner"]))):
     """Удаление таски из проекта и бд, если юзер является создателем проекта"""
 
     service = TasksService(session)
-    await service.delete_task(task_id=task_id, project_id=project_id)
+    await service.delete_task(task_id=task_id, project_id=project_id, connection_id=x_connection_id)
 
     return {"success": True}
 
@@ -85,11 +87,12 @@ async def update_task(project_id: UUID,
                       task_id: UUID,
                       new_task: UpdateTaskSchema,
                       user_id: UUID = Depends(get_current_user),
+                      x_connection_id: str | None = Header(None),
                       session = Depends(get_session),
                       _: None = Depends(CheckUserPerms(["member","owner"]))):
     """Обновление данных о таске. Исполнитель может менять только статус задачи, владелец все поля. 
     Обновляются только данные в непустых столбцах"""
     service = TasksService(session)
-    await service.update_task(task_id=task_id, new_task=new_task, user_id=user_id, project_id=project_id)
+    await service.update_task(task_id=task_id, new_task=new_task, user_id=user_id, project_id=project_id, connection_id=x_connection_id)
     return {"success": True}
 

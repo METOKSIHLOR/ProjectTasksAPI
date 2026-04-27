@@ -1,7 +1,7 @@
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 from fastapi import Response
 from fastapi.params import Depends, Cookie
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -117,11 +117,12 @@ async def get_user_invites(session: AsyncSession = Depends(get_session),
 async def invite_solution(invite_id: UUID,
                                solution: UserInvitesUpdateSchema,
                                user_id: UUID = Depends(get_current_user),
+                               x_connection_id: str | None = Header(None),
                                session: AsyncSession = Depends(get_session)):
     """Ручка позволяет принять/отклонить приглашение в группу.
      Если пользователь его принимает - он добавляется в указанный проект"""
     service = UserServices(session)
-    await service.accept_or_deny_invite(user_id=user_id, invite_id=invite_id, solution=solution)
+    await service.accept_or_deny_invite(user_id=user_id, invite_id=invite_id, solution=solution, connection_id=x_connection_id)
     return {"success": True}
 
 

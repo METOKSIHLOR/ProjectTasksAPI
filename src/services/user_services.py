@@ -69,7 +69,7 @@ class UserServices:
         
         return user
 
-    async def add_user_invite(self, project_id: UUID, member_id: UUID):
+    async def add_user_invite(self, project_id: UUID, member_id: UUID, connection_id):
         exists = await self.repo.get_user_invite_by_project_id(user_id=member_id, project_id=project_id)
 
         if exists is not None:
@@ -81,7 +81,8 @@ class UserServices:
 
         await manager.send_to_room(f"user:{member_id}",
                                    {"type": "invite_create",
-                                    "project_id": str(project_id)})
+                                    "project_id": str(project_id)},
+                                   sender_connection_id=connection_id)
 
         return invite
 
@@ -95,7 +96,7 @@ class UserServices:
                                       project_name=invite.project.name,
                                       project_author_email=invite.project.owner.email) for invite in invites]
 
-    async def accept_or_deny_invite(self, user_id: UUID, invite_id: UUID, solution: UserInvitesUpdateSchema):
+    async def accept_or_deny_invite(self, user_id: UUID, invite_id: UUID, solution: UserInvitesUpdateSchema, connection_id):
         invite = await self.repo.get_user_invite_by_id(user_id=user_id, invite_id=invite_id)
 
         if invite is None:
@@ -110,7 +111,8 @@ class UserServices:
                                        {"type": "invite_accept",
                                         "user_email": invite.user.email,
                                         "user_name": invite.user.name,
-                                        "user_role": member.role})
+                                        "user_role": member.role},
+                                       sender_connection_id=connection_id)
 
         await self.repo.delete_user_invite(invite=invite)
         await self.repo.commit()

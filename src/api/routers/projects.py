@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import CheckUserPerms, get_current_user, get_session
@@ -31,10 +31,11 @@ async def create_project(project: CreateProjectSchema,
             })
 async def delete_project(project_id: UUID,
                          session: AsyncSession = Depends(get_session),
+                         x_connection_id: str | None = Header(None),
                          _: None = Depends(CheckUserPerms(['owner']))):
     """Удаление всего проекта, если юзер является его создателем"""
     services = ProjectServices(session)
-    await services.delete_project(project_id)
+    await services.delete_project(project_id, connection_id=x_connection_id)
     return {"success": True}
 
 @router.get("",
@@ -75,10 +76,11 @@ async def get_project_details(project_id: UUID,
 async def update_project_name(project_id: UUID,
                                  update: UpdateProjectSchema,
                                  session = Depends(get_session),
+                                 x_connection_id: str | None = Header(None),
                                  _: None = Depends(CheckUserPerms(["owner"]))):
     """Обновление названия проекта, если юзер является его создателем"""
     service = ProjectServices(session)
-    await service.update_project_name(project_id=project_id, name=update.name)
+    await service.update_project_name(project_id=project_id, name=update.name, connection_id=x_connection_id)
 
     return {"success": True}
 
@@ -110,8 +112,9 @@ async def remove_project_member(project_id: UUID,
                                 member: ProjectMemberIdSchema,
                                 session: AsyncSession = Depends(get_session),
                                 user_id = Depends(get_current_user),
+                                x_connection_id: str | None = Header(None),
                                 _: None = Depends(CheckUserPerms(["owner"]))):
     """Удаление участника из группы, если таковой в ней присутствует и пользователь является ее создателем"""
     service = ProjectServices(session)
-    await service.remove_member(project_id=project_id, member_email=member.email, user_id=user_id)
+    await service.remove_member(project_id=project_id, member_email=member.email, user_id=user_id, connection_id=x_connection_id)
     return {"success": True}

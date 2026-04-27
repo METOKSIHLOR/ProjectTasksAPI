@@ -16,7 +16,7 @@ class CommentsServices:
         self.tasks_service = TasksService(session)
 
     async def create_comment(
-        self, project_id: UUID, task_id: UUID, author_id: UUID, comment: CreateCommentSchema,
+        self, project_id: UUID, task_id: UUID, author_id: UUID, comment: CreateCommentSchema, connection_id
     ):
         await self.tasks_service.get_and_check_task_in_this_project(project_id=project_id, task_id=task_id)
         comment = Comment(task_id=task_id, author_id=author_id, text=comment.text, replied_to=comment.replied_to)
@@ -37,7 +37,8 @@ class CommentsServices:
                                     "replied_to": str(comment.replied_to) if comment.replied_to is not None else None,
                                     "author_name": comment.author.name,
                                     "author_email": comment.author.email,
-                                    "created_at": comment.created_at.isoformat(),})
+                                    "created_at": comment.created_at.isoformat(),},
+                                   sender_connection_id=connection_id)
 
         return comment
 
@@ -64,7 +65,7 @@ class CommentsServices:
         ]
 
     async def update_comment(
-        self, project_id: UUID, comment_id: UUID, task_id: UUID, user_id: UUID, text: str
+        self, project_id: UUID, comment_id: UUID, task_id: UUID, user_id: UUID, text: str, connection_id
     ):
         # проверяем находится ли такой комментарий в указанной задаче
         comment = await self.get_comment_belong_to_task(
@@ -82,12 +83,13 @@ class CommentsServices:
                                    {"type": "comment_update",
                                     "task_id": str(task_id),
                                     "comment_id": str(comment_id),
-                                    "new_text": text,})
+                                    "new_text": text,},
+                                   sender_connection_id=connection_id)
 
         return comment
 
     async def delete_comment(
-        self, project_id: UUID, comment_id: UUID, task_id: UUID, user_id: UUID
+        self, project_id: UUID, comment_id: UUID, task_id: UUID, user_id: UUID, connection_id
     ):
         user_serv = UserServices(session=self.repo.session)
         comment = await self.get_comment_belong_to_task( # принадлежит ли комментарий указанной таске
@@ -105,7 +107,8 @@ class CommentsServices:
         await manager.send_to_room(f"task:{task_id}",
                                    {"type": "comment_delete",
                                     "task_id": str(task_id),
-                                    "comment_id": str(comment_id),})
+                                    "comment_id": str(comment_id),},
+                                   sender_connection_id=connection_id)
         return comment
 
     async def get_comment_belong_to_task(

@@ -305,10 +305,8 @@ class ConnectionManager:
         for ws in list(self.rooms.get(room, [])):
             enriched_message = {
                 **message,
-                "connection_id": sender_connection_id,
+                "origin_connection_id": sender_connection_id,
             }
-            await self.send_to_ws(ws, enriched_message)
-
             await self.send_to_ws(ws, enriched_message)
 
 
