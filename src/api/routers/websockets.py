@@ -2,7 +2,7 @@ import asyncio
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Cookie
 from fastapi.websockets import WebSocket, WebSocketDisconnect
@@ -139,6 +139,7 @@ class ClientConnection:
     """
     Состояние одного WebSocket клиента.
     """
+    connection_id: str = field(default_factory=lambda: str(uuid4())) # уникальный айди клиента
     rooms: set[str] = field(default_factory=set)  # комнаты, на которые подписан клиент
     send_queue: asyncio.Queue[dict[str, Any]] = field(
         default_factory=lambda: asyncio.Queue(maxsize=WRITE_QUEUE_SIZE),
@@ -195,6 +196,11 @@ class ConnectionManager:
         client = ClientConnection()
         client.writer_task = asyncio.create_task(self._writer(websocket))
         self.clients[websocket] = client
+
+        await manager.send_to_ws(websocket, {
+            "type": "connection_established",
+            "connection_id": client.connection_id,
+        })
 
     async def connect(self, websocket: WebSocket, rooms: list[str]):
         """
@@ -273,7 +279,7 @@ class ConnectionManager:
 
         self.clients.pop(websocket, None)
 
-    async def send_to_ws(self, websocket: WebSocket, message: dict[str, Any]):
+    async def send_to_ws(self, websocket: WebSocket, message: dict[str, Any], sender_ws: WebSocket | None = None):
         """
         Добавляет сообщение в очередь клиента.
         """
@@ -287,13 +293,23 @@ class ConnectionManager:
             # если клиент не успевает читать - отключаем
             await self.disconnect_all(websocket)
 
-    async def send_to_room(self, room: str, message: dict[str, Any]):
+    async def send_to_room(
+            self,
+            room: str,
+            message: dict[str, Any],
+            sender_connection_id: str | None = None,
+    ):
         """
         Рассылает сообщение всем клиентам в комнате.
         """
-        print("sending to room", room, message)
         for ws in list(self.rooms.get(room, [])):
-            await self.send_to_ws(ws, message)
+            enriched_message = {
+                **message,
+                "connection_id": sender_connection_id,
+            }
+            await self.send_to_ws(ws, enriched_message)
+
+            await self.send_to_ws(ws, enriched_message)
 
 
 manager = ConnectionManager()
