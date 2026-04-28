@@ -20,7 +20,7 @@ import {
 import { currentUser } from '../store/auth_store.js'
 import { getStatusText, getStatusColor } from '../modules/statusModule.js'
 import {alertError, alertInfo, alertSuccess, parseApiError} from "../store/alert_store.js";
-import {connectWS, subscribe, unsubscribe} from '../api/ws'
+import {connectWS, getConnectionId, subscribe, unsubscribe} from '../api/ws'
 
 const router = useRouter()
 const route = useRoute()
@@ -143,15 +143,14 @@ async function renameProject({ data, onSuccess, onError }) {
 }
 function WS_renameProject(msg) {
   if (!project.value) return
+  if (msg.origin_connection_id === getConnectionId()) return
 
   project.value.name = msg.new_details
 
-  if (!isOwner.value) {
-    alertInfo(
-        'Attention!',
-        `${owner.value?.name || 'Project owner'} updated Project Name`
-    )
-  }
+  alertInfo(
+      'Attention!',
+      `${owner.value?.name || 'Project owner'} updated Project Name`
+  )
 }
 
 async function addTask({ data, onSuccess, onError }) {
@@ -180,6 +179,7 @@ async function addTask({ data, onSuccess, onError }) {
 }
 function WS_addTask(msg) {
   if (!project.value) return
+  if (msg.origin_connection_id === getConnectionId()) return
 
   tasks.value.push({
     id: msg.task_id,
@@ -188,12 +188,10 @@ function WS_addTask(msg) {
     assignee_email: msg.assignee_email
   })
 
-  if (!isOwner.value) {
-    alertInfo(
-        'Attention!',
-        `${owner.value?.name || 'Project owner'} created a new task`
-    )
-  }
+  alertInfo(
+      'Attention!',
+      `${owner.value?.name || 'Project owner'} created a new task`
+  )
 }
 
 async function removeTask(id) {
@@ -214,15 +212,14 @@ async function removeTask(id) {
 }
 function WS_removeTask(msg) {
   if (!project.value) return
+  if (msg.origin_connection_id === getConnectionId()) return
 
   const deletingTask = tasks.value.find(task => task.id === msg.task_id)
 
-  if (!isOwner.value) {
-    alertInfo(
-        'Attention!',
-        `${owner.value?.name || 'Project owner'} deleted a ${deletingTask.title} Task`
-    )
-  }
+  alertInfo(
+      'Attention!',
+      `${owner.value?.name || 'Project owner'} deleted a ${deletingTask.title} Task`
+  )
   tasks.value = tasks.value.filter(task => task.id !== msg.task_id)
 }
 
@@ -286,23 +283,20 @@ async function removeMember(member) {
 }
 async function WS_removeMember(msg) {
   if (!project.value) return
+  if (msg.origin_connection_id === getConnectionId()) return
 
   const removedCurrentUser = msg.member_email === currentUser.value?.email
-
-  if (removedCurrentUser && !isOwner.value) {
+  if (removedCurrentUser) {
     alertInfo(
         'Вжух!',
         `и ${owner.value?.name || 'Project owner'} выгнал тебя из Проекта`
     )
     await router.push('/')
-    return
   }
-
-  if (isOwner.value) {
-    members.value = members.value.filter(member => member.email !== msg.member_email)
+  else {
     alertInfo(
         'Attention!',
-        `${owner.value?.name || 'Project owner'} removed ${msg.member_email} from the project`
+        `${owner.value?.name || 'Project owner'} removed ${msg.member_email} from this Project`
     )
   }
 }
@@ -310,51 +304,47 @@ async function WS_removeMember(msg) {
 //OTHER WEBSOCKETS
 function WS_TaskUpdate(msg) {
   if (!project.value) return
+  if (msg.origin_connection_id === getConnectionId()) return
 
   const taskIndex = tasks.value.findIndex(task => task.id === msg.task_id)
-  const currentTask = taskIndex !== -1 ? tasks.value[taskIndex] : null
-  const details = msg.new_details || {}
-
-  if (taskIndex !== -1 && typeof details === 'object') {
+  if (
+      taskIndex !== -1 &&
+      typeof msg.new_details === 'object'
+  ) {
     tasks.value[taskIndex] = {
       ...tasks.value[taskIndex],
-      ...details
+      ...msg.new_details
     }
   }
 
   let actorName = owner.value?.name || 'Project owner'
   let actionText = 'updated a task'
-  let shouldShowAlert = true
-
+  if ('status' in details) {
+    actorName = getMemberNameByEmail(
+        currentTask?.assignee_email
+    )
+    actionText = `changed ${currentTask?.title} Task status`
+  }
   if ('title' in details) {
-    actorName = owner.value?.name || 'Project owner'
-    actionText = `updated a title of ${details.title} Task`
+    actionText = `changed ${details.title} Task title`
   }
-  else if ('status' in details) {
-    actorName = getMemberNameByEmail(currentTask?.assignee_email)
-    actionText = `updated a status of ${currentTask.title} Task`
+  if ('description' in details) {
+    actionText = `changed ${currentTask?.title} Task description`
   }
-  else if ('description' in details) {
-    shouldShowAlert = false
-  }
-
-  if (shouldShowAlert) {
-    alertInfo(
-        'Attention!',
-        `${actorName} ${actionText}`
-    )
-  }
+  alertInfo(
+      'Attention!',
+      `${actorName} ${actionText}`
+  )
 }
-async function WS_ProjectDelete() {
+async function WS_ProjectDelete(msg) {
   if (!project.value) return
+  if (msg.origin_connection_id === getConnectionId()) return
 
-  if (!isOwner.value) {
-    alertInfo(
-        'Вжух!',
-        `и ${owner.value?.name || 'Project owner'} удалил весь Проект`
-    )
-    await router.push('/')
-  }
+  alertInfo(
+      'Вжух!',
+      `и ${owner.value?.name || 'Project owner'} удалил весь Проект`
+  )
+  await router.push('/')
 }
 
 // WS HANDLER

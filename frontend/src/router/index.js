@@ -5,9 +5,9 @@ import ProjectNotFound from '../views/PageNotFound.vue'
 import Register from '../views/Register.vue'
 import Login from '../views/Login.vue'
 import TaskPage from '../views/TaskPage.vue'
-import { connectWS } from '../api/ws.js'
+import {connectWS, waitForConnectionId} from '../api/ws.js'
 import { getCurrentUser } from '../api/api.js'
-import {currentUser, setCurrentUser, setUnauthorized} from '../store/auth_store.js'
+import {currentUser, setCurrentUser, setUnauthorized, setWebsocketID} from '../store/auth_store.js'
 import Settings from "../views/Settings.vue";
 import PasswordRecover from "../views/PasswordRecover.vue";
 
@@ -66,7 +66,8 @@ router.beforeEach(async (to, from, next) => {
 
     try {
         await connectWS()
-    } catch (err) {
+    }
+    catch (err) {
         console.error('[WS GUARD] failed to connect', err)
     }
 

@@ -26,7 +26,7 @@ import {
   getStatusButtonColor
 } from '../modules/statusModule.js'
 import {alertError, alertInfo, parseApiError} from "../store/alert_store.js";
-import {connectWS, subscribe, unsubscribe} from '../api/ws'
+import {connectWS, getConnectionId, subscribe, unsubscribe} from '../api/ws'
 
 /* router */
 const router = useRouter()
@@ -187,7 +187,7 @@ async function addStatusComment(statusKey) {
   await layoutRef.value?.scrollToBottomSmooth()
 }
 async function WS_addComment(msg) {
-  if (msg?.author_email === currentUser.value?.email) return
+  if (msg.origin_connection_id === getConnectionId()) return
 
   comments.value.push({
     id: msg.comment_id,
@@ -215,6 +215,7 @@ async function removeComment(comment) {
   }
 }
 function WS_removeComment(msg) {
+  if (msg.origin_connection_id === getConnectionId()) return
   comments.value = comments.value.filter(comment => comment.id !== msg.comment_id)
 }
 
@@ -313,7 +314,7 @@ function goBack() {
 async function handleTaskDeleteMessage(msg) {
     alertInfo(
         'Вжух!',
-        `${msg.value?.name || ''}И задачи больше нет`
+        `И задачи больше нет`
     )
     await router.push(`/projects/${projectId.value}`)
 }

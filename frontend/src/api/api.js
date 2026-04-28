@@ -1,4 +1,5 @@
 import axios from 'axios'
+import {getConnectionId} from "./ws.js";
 
 const api=axios.create({baseURL:'http://localhost:8000',withCredentials:true,headers:{'Content-Type':'application/json'}})
 const r=p=>p.then(res=>res.data)
@@ -10,6 +11,19 @@ const r_with_delay = async (p) => {
     await delay(200)
     return res.data
 }
+api.interceptors.request.use(
+    config => {
+
+        const connectionId = getConnectionId()
+
+        if (connectionId) {
+            config.headers['X-Connection-Id'] = connectionId
+        }
+
+        return config
+    },
+    error => Promise.reject(error)
+)
 
 // AUTH
 export const registerUser=(name,email,password)=>r(api.post('/users/registration',{name,email,password}))

@@ -8,6 +8,9 @@ export function setCurrentUser(user) {
     currentUser.value.settings = normalizeSettings(user.settings); // убрали лишнюю вложенность
     applyStyles();
 }
+export function setWebsocketID(ID) {
+    currentUser.value.WS_ID = ID
+}
 /* Очистка данных пользователя */
 export function setUnauthorized() {
     currentUser.value = false;

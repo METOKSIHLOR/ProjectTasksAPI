@@ -37,6 +37,7 @@ async function submitLogin({ data, onSuccess, onError }) {
     await loginUser(email, password)
     onSuccess()
     const user = await getCurrentUser()
+
     setCurrentUser(user)
 
     clearAlerts()
