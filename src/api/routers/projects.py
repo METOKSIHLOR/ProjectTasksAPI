@@ -94,11 +94,12 @@ async def update_project_name(project_id: UUID,
             })
 async def add_member_invite(project_id: UUID, member: ProjectMemberIdSchema,
                              session: AsyncSession = Depends(get_session),
+                             x_connection_id: str | None = Header(None),
                              _: None = Depends(CheckUserPerms(["owner"]))):
     """Приглашение участника в группу, если пользователь является владельцем"""
     service = ProjectServices(session)
 
-    await service.send_member_invite(member_email=member.email, project_id=project_id)
+    await service.send_member_invite(member_email=member.email, project_id=project_id, connection_id=x_connection_id)
 
     return {"success": True}
 

@@ -69,7 +69,7 @@ class ProjectServices:
             member_id=user.id
         )
 
-    async def send_member_invite(self, member_email, project_id: UUID):
+    async def send_member_invite(self, member_email, project_id: UUID, connection_id):
         """функция отправляет участнику приглашение в проект"""
         project = await self.get_project_by_id(project_id=project_id)
 
@@ -84,7 +84,7 @@ class ProjectServices:
         if existing:
             raise ProjectMemberConflictException(project_id=project.id, member_id=member.id)
 
-        invite = await self.user_serv.add_user_invite(project_id=project_id, member_id=member.id)
+        invite = await self.user_serv.add_user_invite(project_id=project_id, member_id=member.id, connection_id=connection_id)
 
         await self.repo.commit()
         return invite
