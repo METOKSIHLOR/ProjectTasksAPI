@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from uuid import UUID
 from src.api.dependencies import CheckUserPerms, get_current_user, get_session
 from src.api.schemas.comments_schemas import CommentInfoSchema, CommentUpdateSchema, CreateCommentSchema
@@ -17,10 +17,11 @@ async def create_comment_in_task(project_id: UUID,
                          task_id: UUID,
                          comment: CreateCommentSchema,
                          user_id: UUID = Depends(get_current_user),
+                         x_connection_id: str | None = Header(None),
                          session = Depends(get_session)) -> CommentInfoSchema:
     """Создание комментария в таске, если указанная таска находится в указанном проекте"""
     comm_service = CommentsServices(session)
-    comment = await comm_service.create_comment(project_id=project_id, task_id=task_id, author_id=user_id, comment=comment)
+    comment = await comm_service.create_comment(project_id=project_id, task_id=task_id, author_id=user_id, comment=comment, connection_id=x_connection_id)
     return comment
 
 @router.get("/comments", summary="Получить комментарии задачи",
@@ -65,8 +66,9 @@ async def delete_comment(project_id: UUID,
                           task_id: UUID,
                           comment_id: UUID,
                           user_id: UUID = Depends(get_current_user),
+                         x_connection_id: str | None = Header(None),
                           session = Depends(get_session),):
     """Мягкое удаление комментария из таски (is_deleted=True), если пользователь является его автором или владельцем проекта"""
     service = CommentsServices(session)
-    await service.delete_comment(project_id=project_id, comment_id=comment_id, user_id=user_id, task_id=task_id)
+    await service.delete_comment(project_id=project_id, comment_id=comment_id, user_id=user_id, task_id=task_id, connection_id=x_connection_id)
     return {"success": True}

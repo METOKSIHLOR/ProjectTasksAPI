@@ -5,3 +5,10 @@
 *$py.class
 .pytest_cache/
 *.log
+ node_modules/
+frontend/node_modules/
+frontend/dist/
+  frontend/.vite/
+  frontend/.idea/
+  frontend/.DS_Store
+  frontend/*.local

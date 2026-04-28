@@ -72,7 +72,7 @@ class ProjectServices:
     async def send_member_invite(self, member_email, project_id: UUID):
         """функция отправляет участнику приглашение в проект"""
         project = await self.get_project_by_id(project_id=project_id)
-        
+
         member = await self.user_serv.get_user_by_email(member_email)
 
         # проверяем находится ли в данный момент такой участник в проекте

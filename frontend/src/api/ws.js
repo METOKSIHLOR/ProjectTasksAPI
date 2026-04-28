@@ -84,8 +84,7 @@ export function connectWS() {
         socket.onmessage = (event) => {
             try {
                 const msg = JSON.parse(event.data)
-
-                console.log('[WS PARSED]', msg)
+                console.log('[WS ANSWER]', msg)
             }
             catch {
                 console.warn('[WS] non-json message')
