@@ -285,6 +285,8 @@ async function WS_removeMember(msg) {
   if (!project.value) return
   if (msg.origin_connection_id === getConnectionId()) return
 
+  members.value = members.value.filter(m => m.email !== msg.member_email)
+
   const removedCurrentUser = msg.member_email === currentUser.value?.email
   if (removedCurrentUser) {
     alertInfo(

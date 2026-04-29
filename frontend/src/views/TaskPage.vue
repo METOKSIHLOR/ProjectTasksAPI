@@ -1,5 +1,5 @@
 <script setup>
-import {ref, watch, computed, onMounted, onBeforeUnmount, reactive, nextTick} from 'vue'
+import {ref, watch, computed, onMounted, onBeforeUnmount, reactive} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DashboardLayout from '../components/Layout.vue'
 import BaseButton from '../components/BaseButton.vue'
@@ -7,7 +7,7 @@ import BaseCard from '../components/BaseCard.vue'
 import BaseLoader from '../components/BaseLoader.vue'
 import ModalWindow from '../components/ModalWindow.vue'
 import BaseForm from '../components/BaseForm.vue'
-import {getTask, getComments, createComment, deleteComment, updateTask, getProject} from '../api/api.js'
+import {getTask, getComments, createComment, deleteComment, updateTask} from '../api/api.js'
 import { currentUser } from '../store/auth_store.js'
 import * as yup from 'yup'
 
@@ -143,7 +143,6 @@ async function renameTask({ data, onSuccess, onError }) {
     alertError(title, message)
   }
 }
-
 async function editDescription({ data, onSuccess, onError }) {
   try {
     await updateTask(projectId.value, taskId.value, { description: data.description })
@@ -160,6 +159,33 @@ async function editDescription({ data, onSuccess, onError }) {
     const { title, message } = parseApiError(err)
     alertError(title, message)
   }
+}
+function WS_updateTask(msg) {
+  if (msg.origin_connection_id === getConnectionId()) return
+
+  const details = msg.new_details || {}
+
+  let alertText = 'Task updated'
+
+  if ('title' in details) {
+    task.value.title = details.title
+    alertText = 'Task title updated'
+  }
+
+  if ('status' in details) {
+    task.value.status = details.status
+    alertText = 'Task status updated'
+  }
+
+  if ('description' in details) {
+    task.value.description = details.description
+    alertText = 'Task description updated'
+  }
+
+  alertInfo(
+      'Attention!',
+      alertText
+  )
 }
 
 /* comments */
@@ -330,6 +356,10 @@ async function handleTaskMessage(event) {
     switch (msg?.type) {
       case 'task_delete':
         await handleTaskDeleteMessage(msg)
+        break
+
+      case 'task_update':
+        WS_updateTask(msg)
         break
 
       case 'comment_create':
