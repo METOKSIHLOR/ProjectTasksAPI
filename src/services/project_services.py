@@ -103,6 +103,11 @@ class ProjectServices:
         await self.repo.remove_member(member=project_member)
         await self.repo.commit()
 
+        await manager.send_to_room(f"user:{member.id}",
+                                   {"type": "member_kicked",
+                                    "project_id": str(project_id)},
+                                   sender_connection_id=connection_id)
+
         await manager.send_to_room(f"project:{project_id}",
                                    {"type": "member_remove",
                                     "project_id": str(project_id),
