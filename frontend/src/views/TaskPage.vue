@@ -105,7 +105,6 @@ async function loadTaskAndComments() {
   try {
     task.value = await getTask(projectId.value, taskId.value) || {}
     comments.value = await getComments(projectId.value, taskId.value) || []
-
     comments.value.forEach(c => c.statusKey = parseStatusFromComment(c.text))
     if (!comments.value.some(c => isStatusComment(c.text))) {
       await addStatusComment('todo')
@@ -277,6 +276,47 @@ async function advanceStatus() {
 }
 
 /* helpers */
+function formatRelativeTime(dateString) {
+  // 1. Парсим входную строку "2026-04-29 02:48:18"
+  // Заменяем пробел на T для корректного парсинга ISO формата
+  const date = new Date(dateString.replace(' ', 'T'));
+  const now = new Date();
+
+  // 2. Вспомогательные функции для добавления ведущих нулей (чч.мм.сс)
+  const pad = (n) => (n < 10 ? '0' + n : n);
+
+  // 3. Получаем компоненты
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const year = date.getFullYear();
+
+  // 4. Сравниваем даты (без учета времени, только год-месяц-день)
+  const isToday =
+      date.getDate() === now.getDate() &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear();
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday =
+      date.getDate() === yesterday.getDate() &&
+      date.getMonth() === yesterday.getMonth() &&
+      date.getFullYear() === yesterday.getFullYear();
+
+  // 5. Логика форматирования
+  if (isToday) {
+    return `${hours}:${minutes}:${seconds}`; // чч.мм.сс
+  } else if (isYesterday) {
+    return 'yesterday';
+  } else if (date.getFullYear() === now.getFullYear()) {
+    return `${day}.${month}`; // мм.дд (в этом году)
+  } else {
+    return `${day}.${month}.${year}`; // гггг.мм.дд (в прошлом/будущем году)
+  }
+}
 function getCardType(comment) {
   if (isStatusComment(comment.text)) return 'status'
   if (comment.author_email === currentUser.value?.email) return 'comment-owner'
@@ -499,7 +539,9 @@ onBeforeUnmount(() => {
             <span class="reply-text" :class="getReplyText(comment.replied_to) ? '' : 'deleted'">
               {{getReplyText(comment.replied_to) || 'deleted comment'}}
             </span>
-
+          </template>
+          <template #time v-if="!comment.statusKey">
+            <span>{{formatRelativeTime(comment.created_at)}}</span>
           </template>
 
           <span>
