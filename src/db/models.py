@@ -22,6 +22,7 @@ class User(Base):
 
     memberships = relationship("ProjectMember", back_populates="user", lazy="selectin")
     settings = relationship("UserSettings", lazy="selectin", uselist=False, back_populates="user")
+    invites = relationship("UserInvite", back_populates="user")
 
 class UserSettings(Base):
     __tablename__ = "user_settings"
@@ -40,7 +41,7 @@ class UserInvite(Base):
     status: Mapped[Literal["accepted", "denied", "waiting"]] = mapped_column(nullable=True, default='waiting')
 
     project = relationship("Project")
-    user = relationship("User")
+    user = relationship("User", back_populates="invites")
 
 class Project(Base):
     __tablename__ = "projects"
