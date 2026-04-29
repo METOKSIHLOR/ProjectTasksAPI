@@ -90,15 +90,17 @@ class UserRepository:
         return invite
 
     async def check_user_role(self, user_id: UUID, project_id: UUID, roles: List[str]) -> bool:
-        stmt = select(ProjectMember).where(and_(ProjectMember.project_id == project_id, ProjectMember.user_id == user_id))
-        result = await self.session.execute(stmt)
-        member = result.scalar_one_or_none()
-
-        if member:
-            for i in roles:
-                if member.role == i:
-                   return True
-        return False
+        stmt = (
+            select(ProjectMember)
+            .where(
+                ProjectMember.project_id == project_id,
+                ProjectMember.user_id == user_id,
+                ProjectMember.role.in_(roles)
+            )
+            .exists()
+        )
+        result = await self.session.execute(select(stmt))
+        return result.scalar()
 
 
     async def commit(self):
