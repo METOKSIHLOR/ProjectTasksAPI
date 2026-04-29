@@ -35,6 +35,10 @@ const createReply = (e) => {
         <slot name="reply" />
       </div>
       <slot />
+      <div v-if="$slots.time" class="time-slot">
+        <slot name="time"/>
+      </div>
+
     </div>
     <BaseButton
         v-if="deletable"
@@ -88,6 +92,12 @@ const createReply = (e) => {
   font-size: var(--font-size-base);
   color: var(--color-primary);
   font-weight: 500;
+}
+.time-slot {
+  color: var(--color-text-muted);
+  font-size: 8px;
+  text-align: end;
+  margin-left: 4px;
 }
 
 /* delete button */
@@ -168,7 +178,7 @@ const createReply = (e) => {
 .base-card.comment-owner,
 .base-card.comment-companion {
   max-width: 70%;
-  padding: 10px 10px;
+  padding: 14px 12px 4px;
   line-height: normal;
   font-size: var(--font-size-base);
   display: inline-block;

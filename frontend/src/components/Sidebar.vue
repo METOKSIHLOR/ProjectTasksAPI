@@ -143,7 +143,7 @@ watch(invites, (val) => {
   }
 })
 
-function handleInviteCreateMessage(msg) {
+function WS_loadInvites(msg) {
   alertInfo('Attention!', 'You received a new project invite')
   refreshInvites()
 }
@@ -154,7 +154,7 @@ async function handleUserMessage(event) {
 
     switch (msg?.type) {
       case 'invite_create':
-        handleInviteCreateMessage(msg)
+        WS_loadInvites(msg)
         break
     }
   } catch (e) {
@@ -163,6 +163,7 @@ async function handleUserMessage(event) {
 }
 
 onMounted(async () => {
+  await refreshInvites()
   try {
     socket = await connectWS()
     socket?.addEventListener('message', handleUserMessage)
@@ -188,7 +189,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="drawer-content">
-        <button class="drawer-item" @click="closeMenu(); loadInvites()">+ Invites</button>
+        <button class="drawer-item" :class="invites.length ? 'drawer-invite' : ''" @click="closeMenu(); loadInvites()">+ Invites</button>
         <button class="drawer-item" @click="showChangeName = true; closeMenu()">✎ Change Name</button>
         <button class="drawer-item">✎ {{ currentUser?.email }}</button>
         <button class="drawer-item">✎ Change Password</button>
@@ -313,6 +314,15 @@ onBeforeUnmount(() => {
   font-size: var(--font-size-base);
   background: var(--color-bg);
   color: var(--color-text);
+}
+.drawer-invite::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 3px var(--color-primary);
 }
 .drawer-item:hover {
   background: var(--color-primary-light);

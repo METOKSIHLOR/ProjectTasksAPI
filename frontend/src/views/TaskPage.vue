@@ -1,5 +1,5 @@
 <script setup>
-import {ref, watch, computed, onMounted, onBeforeUnmount, reactive, nextTick} from 'vue'
+import {ref, watch, computed, onMounted, onBeforeUnmount, reactive} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DashboardLayout from '../components/Layout.vue'
 import BaseButton from '../components/BaseButton.vue'
@@ -7,7 +7,7 @@ import BaseCard from '../components/BaseCard.vue'
 import BaseLoader from '../components/BaseLoader.vue'
 import ModalWindow from '../components/ModalWindow.vue'
 import BaseForm from '../components/BaseForm.vue'
-import {getTask, getComments, createComment, deleteComment, updateTask, getProject} from '../api/api.js'
+import {getTask, getComments, createComment, deleteComment, updateTask} from '../api/api.js'
 import { currentUser } from '../store/auth_store.js'
 import * as yup from 'yup'
 
@@ -105,7 +105,6 @@ async function loadTaskAndComments() {
   try {
     task.value = await getTask(projectId.value, taskId.value) || {}
     comments.value = await getComments(projectId.value, taskId.value) || []
-
     comments.value.forEach(c => c.statusKey = parseStatusFromComment(c.text))
     if (!comments.value.some(c => isStatusComment(c.text))) {
       await addStatusComment('todo')
@@ -143,7 +142,6 @@ async function renameTask({ data, onSuccess, onError }) {
     alertError(title, message)
   }
 }
-
 async function editDescription({ data, onSuccess, onError }) {
   try {
     await updateTask(projectId.value, taskId.value, { description: data.description })
@@ -160,6 +158,33 @@ async function editDescription({ data, onSuccess, onError }) {
     const { title, message } = parseApiError(err)
     alertError(title, message)
   }
+}
+function WS_updateTask(msg) {
+  if (msg.origin_connection_id === getConnectionId()) return
+
+  const details = msg.new_details || {}
+
+  let alertText = 'Task updated'
+
+  if ('title' in details) {
+    task.value.title = details.title
+    alertText = 'Task title updated'
+  }
+
+  if ('status' in details) {
+    task.value.status = details.status
+    alertText = 'Task status updated'
+  }
+
+  if ('description' in details) {
+    task.value.description = details.description
+    alertText = 'Task description updated'
+  }
+
+  alertInfo(
+      'Attention!',
+      alertText
+  )
 }
 
 /* comments */
@@ -251,6 +276,47 @@ async function advanceStatus() {
 }
 
 /* helpers */
+function formatRelativeTime(dateString) {
+  // 1. Парсим входную строку "2026-04-29 02:48:18"
+  // Заменяем пробел на T для корректного парсинга ISO формата
+  const date = new Date(dateString.replace(' ', 'T'));
+  const now = new Date();
+
+  // 2. Вспомогательные функции для добавления ведущих нулей (чч.мм.сс)
+  const pad = (n) => (n < 10 ? '0' + n : n);
+
+  // 3. Получаем компоненты
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const year = date.getFullYear();
+
+  // 4. Сравниваем даты (без учета времени, только год-месяц-день)
+  const isToday =
+      date.getDate() === now.getDate() &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear();
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday =
+      date.getDate() === yesterday.getDate() &&
+      date.getMonth() === yesterday.getMonth() &&
+      date.getFullYear() === yesterday.getFullYear();
+
+  // 5. Логика форматирования
+  if (isToday) {
+    return `${hours}:${minutes}:${seconds}`; // чч.мм.сс
+  } else if (isYesterday) {
+    return 'yesterday';
+  } else if (date.getFullYear() === now.getFullYear()) {
+    return `${day}.${month}`; // мм.дд (в этом году)
+  } else {
+    return `${day}.${month}.${year}`; // гггг.мм.дд (в прошлом/будущем году)
+  }
+}
 function getCardType(comment) {
   if (isStatusComment(comment.text)) return 'status'
   if (comment.author_email === currentUser.value?.email) return 'comment-owner'
@@ -330,6 +396,10 @@ async function handleTaskMessage(event) {
     switch (msg?.type) {
       case 'task_delete':
         await handleTaskDeleteMessage(msg)
+        break
+
+      case 'task_update':
+        WS_updateTask(msg)
         break
 
       case 'comment_create':
@@ -469,7 +539,9 @@ onBeforeUnmount(() => {
             <span class="reply-text" :class="getReplyText(comment.replied_to) ? '' : 'deleted'">
               {{getReplyText(comment.replied_to) || 'deleted comment'}}
             </span>
-
+          </template>
+          <template #time v-if="!comment.statusKey">
+            <span>{{formatRelativeTime(comment.created_at)}}</span>
           </template>
 
           <span>
