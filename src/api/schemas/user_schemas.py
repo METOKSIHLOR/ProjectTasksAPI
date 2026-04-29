@@ -46,8 +46,9 @@ class UserSettingsSchema(BaseModel):
                            description="Здесь находятся все настройки пользователя в JSON формате",
                            examples=[{}], )
 
-class UserResponseWithSettingsSchema(UserResponseSchema):
+class UserResponseWithRelationsSchema(UserResponseSchema):
     settings: dict = Field(title="Настройки пользователя",)
+    unresolved_invites: int = Field(title="Количество нерешнных приглашений юзера")
 
 class UserSettingsResponseSchema(UserSettingsSchema):
     pass

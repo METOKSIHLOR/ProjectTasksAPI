@@ -2,10 +2,10 @@ from typing import List
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from sqlalchemy.orm import selectinload
 
-from src.db.models import User, Project, ProjectMember, UserInvite
+from src.db.models import User, Project, ProjectMember, UserInvite, UserSettings
 
 
 class UserRepository:
@@ -31,6 +31,15 @@ class UserRepository:
         return user
 
     async def get_user_by_id(self, user_id: UUID):
+        user = await self.session.execute(select(User).where(User.id == user_id))
+        return user.scalar_one_or_none()
+
+    async def get_count_user_invites(self, user_id: UUID):
+        stmt = select(func.count(UserInvite.id)).where(UserInvite.user_id == user_id)
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
+
+    async def get_user_by_id_with_settings(self, user_id: UUID):
         user = await self.session.execute(select(User).where(User.id == user_id).options(selectinload(User.settings)))
         return user.scalar_one_or_none()
 

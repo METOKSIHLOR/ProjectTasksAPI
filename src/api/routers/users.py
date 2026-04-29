@@ -13,7 +13,7 @@ from src.api.schemas.user_schemas import (
     UserRegistrationSchema,
     UserResponseSchema,
     UserCredsSchema, UpdateUserSchema, UserSettingsResponseSchema, UpdateUserSettingsSchema, UserInvitesInfoSchema,
-    UserInvitesUpdateSchema, UserResponseWithSettingsSchema,
+    UserInvitesUpdateSchema, UserResponseWithRelationsSchema,
 )
 from src.services.user_services import UserServices
 
@@ -90,11 +90,11 @@ async def user_logout(response: Response, session_id=Cookie(None)):
 async def get_user_profile(
     user_id: UUID = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> UserResponseWithSettingsSchema:
+) -> UserResponseWithRelationsSchema:
     """Пользователь получает данные о своем аккаунте, который определяется по номеру его сессии в куках"""
     service = UserServices(session)
-    user = await service.get_user_by_id(user_id=user_id)  # получаем юзера
-    return UserResponseWithSettingsSchema(name=user.name, email=user.email, settings=user.settings.settings)
+    user = await service.get_user_by_id_with_rels(user_id=user_id)  # получаем юзера с его настройками и инвайтами
+    return user
 
 @router.get("/invites",
             summary="Получение приглашений пользователя",

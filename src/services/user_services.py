@@ -7,7 +7,8 @@ from src.core.exceptions.users_exceptions import ConflictEmailException, Invalid
     UserNotFoundException, UserNotAuthorizedException, UserInviteNotFoundException, ConflictInviteException
 
 from src.api.schemas.user_schemas import UserRegistrationSchema, UserCredsSchema, UpdateUserSettingsSchema, \
-    UserSettingsResponseSchema, UpdateUserSchema, UserInvitesInfoSchema, UserInvitesUpdateSchema
+    UserSettingsResponseSchema, UpdateUserSchema, UserInvitesInfoSchema, UserInvitesUpdateSchema, \
+    UserResponseWithRelationsSchema
 from src.db.models import User, UserSettings, UserInvite, ProjectMember
 from src.db.redis_storage import storage
 from src.db.repositories.project_repo import ProjectRepository
@@ -68,6 +69,20 @@ class UserServices:
             raise UserNotFoundException(user_cred=user_id)
         
         return user
+
+    async def get_user_by_id_with_rels(self, user_id: UUID):
+        user = await self.repo.get_user_by_id_with_settings(user_id=user_id)
+
+
+        if user is None:
+            raise UserNotFoundException(user_cred=user_id)
+
+        user_invites = await self.repo.get_count_user_invites(user_id=user_id)
+
+        return UserResponseWithRelationsSchema(name=user.name,
+                                              email=user.email,
+                                              settings=user.settings.settings,
+                                              unresolved_invites=user_invites)
 
     async def add_user_invite(self, project_id: UUID, member_id: UUID, connection_id):
         exists = await self.repo.get_user_invite_by_project_id(user_id=member_id, project_id=project_id)
