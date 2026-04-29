@@ -27,8 +27,8 @@ class ProjectServices:
 
         return project
 
-    async def get_project_by_id_with_tasks(self, project_id: UUID):
-        project = await self.repo.get_project_by_id_with_tasks(project_id)
+    async def get_project_by_id_with_members(self, project_id: UUID):
+        project = await self.repo.get_project_by_id_with_members(project_id)
 
         if project is None:
             raise ProjectNotFoundException(project_id=project_id)
@@ -36,7 +36,7 @@ class ProjectServices:
         return project
 
     async def delete_project(self, project_id: UUID, connection_id):
-        project = await self.get_project_by_id_with_tasks(project_id)
+        project = await self.get_project_by_id_with_members(project_id)
         
         await self.repo.delete_project(project)
         await self.repo.commit()
@@ -45,9 +45,10 @@ class ProjectServices:
                                    {"type": "project_delete",
                                     "project_id": str(project_id)},
                                    sender_connection_id=connection_id)
-        for task in project.tasks:
-            await manager.send_to_room(f"task:{task.id}",
-                                       {"type": "project_delete"},
+        for member in project.members:
+            await manager.send_to_room(f"user:{member.user_id}",
+                                       {"type": "project_delete",
+                                        "project_id": str(project.id)},
                                        sender_connection_id=connection_id)
 
         return project
