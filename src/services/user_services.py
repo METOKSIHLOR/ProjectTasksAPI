@@ -1,4 +1,6 @@
 from typing import List
+
+from django.conf import Settings
 from fastapi.params import Cookie
 
 from src.api.authorization.hash import hash_password, verify_password
@@ -8,7 +10,7 @@ from src.core.exceptions.users_exceptions import ConflictEmailException, Invalid
 
 from src.api.schemas.user_schemas import UserRegistrationSchema, UserCredsSchema, UpdateUserSettingsSchema, \
     UserSettingsResponseSchema, UpdateUserSchema, UserInvitesInfoSchema, UserInvitesUpdateSchema, \
-    UserResponseWithRelationsSchema
+    UserResponseWithRelationsSchema, UserSettingsSchema, SettingsSchema
 from src.db.models import User, UserSettings, UserInvite, ProjectMember
 from src.db.redis_storage import storage
 from src.db.repositories.project_repo import ProjectRepository
@@ -24,7 +26,7 @@ class UserServices:
 
     async def register(self, schema: UserRegistrationSchema):
         hash_pw = hash_password(schema.password) # хешируем пароль юзера
-        model = User(name=schema.name, email=schema.email, hash_password=hash_pw, settings=UserSettings(settings={}))
+        model = User(name=schema.name, email=schema.email, hash_password=hash_pw)
 
         email_exist = await self.repo.get_user_by_email(email=schema.email) # проверяем существует ли уже такая почта в бд
 
@@ -81,7 +83,12 @@ class UserServices:
 
         return UserResponseWithRelationsSchema(name=user.name,
                                               email=user.email,
-                                              settings=user.settings.settings,
+                                               settings=SettingsSchema(
+                                                   theme=user.settings.theme,
+                                                   theme_color=user.settings.theme_color,
+                                                   font_size=user.settings.font_size,
+                                                   layout_width=user.settings.layout_width,
+                                               ),
                                               unresolved_invites=user_invites)
 
     async def add_user_invite(self, project_id: UUID, member_id: UUID, connection_id):
@@ -160,7 +167,12 @@ class UserServices:
         await self.repo.update_user_settings(user=user, new_data=new_settings.model_dump())
         await self.repo.commit()
 
-        return UserSettingsResponseSchema(settings=user.settings.settings)
+        return UserSettingsResponseSchema(settings=SettingsSchema(
+                                                   theme=user.settings.theme,
+                                                   theme_color=user.settings.theme_color,
+                                                   font_size=user.settings.font_size,
+                                                   layout_width=user.settings.layout_width,
+                                               ))
 
     async def check_user_role(self, user_id, project_id, roles: List[str]):
         # проверяем соответствие роли пользователя

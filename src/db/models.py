@@ -28,7 +28,10 @@ class UserSettings(Base):
     __tablename__ = "user_settings"
     id: Mapped[uuid.UUID] = mapped_column(PGUUID, primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("users.id"))
-    settings: Mapped[dict] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=False)
+    theme: Mapped[Literal['light', 'dark']] = mapped_column(default='light', nullable=False)
+    theme_color: Mapped[Literal['green', 'yellow', 'blue', "red", "sky", "orange", "purple"]] = mapped_column(default='green', nullable=False)
+    font_size: Mapped[Literal['normal', 'large']] = mapped_column(default='normal', nullable=False)
+    layout_width: Mapped[Literal['normal', 'wide']] = mapped_column(default='normal', nullable=False)
 
     user = relationship("User", back_populates="settings")
 

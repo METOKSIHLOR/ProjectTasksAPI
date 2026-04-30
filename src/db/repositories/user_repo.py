@@ -15,6 +15,7 @@ class UserRepository:
     async def create_user(self, user: User):
         self.session.add(user)
         await self.session.flush()
+        self.session.add(UserSettings(user_id=user.id))
         return user
 
     async def update_user_profile(self, user: User, new_details: dict):

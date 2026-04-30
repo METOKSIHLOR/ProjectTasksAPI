@@ -41,13 +41,22 @@ class UserResponseSchema(BaseModel):
                             description="Принимается любая почта, которая содержит @",
                             examples=["metoks@gmail.com", "trap@abcde.ru"],)
 
+class SettingsSchema(BaseModel):
+    theme: Literal['light', 'dark'] = Field(title="Тема пользователя")
+    theme_color: Literal['green', 'yellow', 'blue', "red", "sky", "orange", "purple"] = Field(title="Расцветка темы")
+    font_size: Literal['normal', 'large'] = Field(title="Размер шрифта")
+    layout_width: Literal['normal', 'wide'] = Field(title="Ширина интерфейса")
+
 class UserSettingsSchema(BaseModel):
-    settings: dict = Field(title="Настройки пользователя",
+    settings: SettingsSchema = Field(title="Настройки пользователя",
                            description="Здесь находятся все настройки пользователя в JSON формате",
-                           examples=[{}], )
+                           examples=[{"theme": "light",
+                                      "theme_color": "green",
+                                       "font_size": "normal",
+                                       "layout_width": "normal",}])
 
 class UserResponseWithRelationsSchema(UserResponseSchema):
-    settings: dict = Field(title="Настройки пользователя",)
+    settings: SettingsSchema = Field(title="Настройки пользователя",)
     unresolved_invites: int = Field(title="Количество нерешнных приглашений юзера")
 
 class UserSettingsResponseSchema(UserSettingsSchema):
