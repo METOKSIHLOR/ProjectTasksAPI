@@ -3,11 +3,9 @@ FROM python:3.12-slim
 WORKDIR /app
 
 COPY requirements.txt .
-COPY wheelhouse /wheelhouse
+COPY wheelhouse /app/wheelhouse
 
-RUN pip install --no-cache-dir --no-index \
-    --find-links=/wheelhouse \
-    -r requirements.txt
+RUN pip install --no-index --find-links=/app/wheelhouse -r requirements.txt
 
 COPY . .
 
