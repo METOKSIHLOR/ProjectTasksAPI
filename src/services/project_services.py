@@ -119,7 +119,7 @@ class ProjectServices:
         return member
 
     async def update_project_name(self, project_id: UUID, name: str, connection_id):
-        project = await self.get_project_by_id(project_id=project_id)
+        project = await self.get_project_by_id_with_members(project_id=project_id)
         project = await self.repo.update_project_name(project=project, name=name)
         await self.repo.commit()
 
@@ -128,6 +128,12 @@ class ProjectServices:
                                     "project_id": str(project_id),
                                     "new_details": name},
                                    sender_connection_id=connection_id)
+        
+        for member in project.members:
+            await manager.send_to_room(f"user:{member.user_id}",
+                                       {"type": "project_delete",
+                                        "project_id": str(project.id)},
+                                       sender_connection_id=connection_id)
 
         return project
 
