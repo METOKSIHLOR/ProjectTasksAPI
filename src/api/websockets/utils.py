@@ -4,22 +4,19 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Cookie
-from fastapi.websockets import WebSocket, WebSocketDisconnect
+from fastapi.websockets import WebSocket
 
-import src.db.session as sess
 from src.core.exceptions.users_exceptions import UserNotAuthorizedException
 from src.db.redis_storage import storage
 from src.db.repositories.project_repo import ProjectRepository
 from src.db.repositories.tasks_repo import TasksRepository
 
-router = APIRouter()
-
-# Ограничения для защиты от злоупотреблений
-MAX_ROOMS_PER_USER = 5          # сколько комнат может слушать один клиент
-MAX_ROOMS_PER_MESSAGE = 50      # сколько комнат можно передать в одном сообщении
-WRITE_QUEUE_SIZE = 200          # буфер исходящих сообщений на клиента
-SEND_TIMEOUT_SECONDS = 5        # таймаут отправки в websocket
+class Limits:
+    # Ограничения для защиты от злоупотреблений
+    MAX_ROOMS_PER_USER = 5          # сколько комнат может слушать один клиент
+    MAX_ROOMS_PER_MESSAGE = 50      # сколько комнат можно передать в одном сообщении
+    WRITE_QUEUE_SIZE = 200          # буфер исходящих сообщений на клиента
+    SEND_TIMEOUT_SECONDS = 5        # таймаут отправки в websocket
 
 
 async def get_current_user(session_id: str | None):
@@ -142,7 +139,7 @@ class ClientConnection:
     connection_id: str = field(default_factory=lambda: str(uuid4())) # уникальный айди клиента
     rooms: set[str] = field(default_factory=set)  # комнаты, на которые подписан клиент
     send_queue: asyncio.Queue[dict[str, Any]] = field(
-        default_factory=lambda: asyncio.Queue(maxsize=WRITE_QUEUE_SIZE),
+        default_factory=lambda: asyncio.Queue(maxsize=Limits.WRITE_QUEUE_SIZE),
     )  # очередь сообщений на отправку
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)  # защита от гонок
     writer_task: asyncio.Task | None = None  # задача отправки сообщений
@@ -180,7 +177,7 @@ class ConnectionManager:
 
                 await asyncio.wait_for(
                     websocket.send_json(payload),
-                    timeout=SEND_TIMEOUT_SECONDS,
+                    timeout=Limits.SEND_TIMEOUT_SECONDS,
                 )
         except Exception:
             # при любой ошибке - полностью отключаем клиента
@@ -218,7 +215,7 @@ class ConnectionManager:
             new_rooms = set(rooms) - current_rooms
 
             # проверка лимита
-            if len(new_rooms) + len(current_rooms) > MAX_ROOMS_PER_USER:
+            if len(new_rooms) + len(current_rooms) > Limits.MAX_ROOMS_PER_USER:
                 return {
                     "success": False,
                     "error": "The rooms limit has been reached.",
@@ -309,116 +306,4 @@ class ConnectionManager:
             }
             await self.send_to_ws(ws, enriched_message)
 
-
 manager = ConnectionManager()
-
-
-@router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket, session_id: str = Cookie(None)):
-    """
-    Основной endpoint WebSocket.
-
-    Поддерживает:
-    - subscribe
-    - unsubscribe
-    """
-
-    # первичная проверка сессии
-    try:
-        user_id = await get_current_user(session_id)
-    except UserNotAuthorizedException:
-        await websocket.close(code=1008)
-        return
-
-    await websocket.accept()
-    await manager.register(websocket)
-
-    # запускаем watcher сессии
-    watcher_task = asyncio.create_task(
-        session_watcher(websocket, session_id)
-    )
-
-    # автоматически подписываем на личную комнату
-    await manager.connect(websocket, [f"user:{user_id}"])
-
-    try:
-        while True:
-            try:
-                message = await websocket.receive_json()
-            except WebSocketDisconnect:
-                break
-            except Exception:
-                await manager.send_to_ws(
-                    websocket,
-                    {"success": False, "error": "Invalid message format"},
-                )
-                continue
-
-            if not isinstance(message, dict):
-                await manager.send_to_ws(
-                    websocket,
-                    {"success": False, "error": "Invalid message format"},
-                )
-                continue
-
-            message_rooms = message.get("rooms", [])
-            if not isinstance(message_rooms, list) or len(message_rooms) > MAX_ROOMS_PER_MESSAGE:
-                await manager.send_to_ws(
-                    websocket,
-                    {"success": False, "error": "Message too large."},
-                )
-                continue
-
-            action = message.get("action")
-
-            # фильтруем только валидные строки вида "type:id"
-            rooms = [
-                room
-                for room in set(message_rooms)
-                if isinstance(room, str) and ":" in room
-            ]
-
-            match action:
-                case "subscribe":
-                    allowed_rooms: list[str] = []
-
-                    if rooms:
-                        async with sess.SessionFactory() as session:
-                            project_repo = ProjectRepository(session)
-                            task_repo = TasksRepository(session)
-                            cache = UserAccessCache()
-
-                            for room in rooms:
-                                has_access = await check_user_access(
-                                    room=room,
-                                    user_id=user_id,
-                                    project_repo=project_repo,
-                                    task_repo=task_repo,
-                                    cache=cache,
-                                )
-                                if has_access:
-                                    allowed_rooms.append(room)
-
-                    result = await manager.connect(websocket, allowed_rooms)
-                    await manager.send_to_ws(websocket, result)
-
-                case "unsubscribe":
-                    if rooms:
-                        await manager.disconnect(websocket, rooms)
-
-                case _:
-                    await manager.send_to_ws(
-                        websocket,
-                        {"success": False, "error": "Invalid action"},
-                    )
-
-    finally:
-        # аккуратно останавливаем watcher
-        watcher_task.cancel()
-        try:
-            await watcher_task
-        except asyncio.CancelledError:
-            pass
-
-        # полностью чистим соединение
-        await manager.disconnect_all(websocket)

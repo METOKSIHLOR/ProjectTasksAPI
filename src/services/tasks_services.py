@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from src.api.routers.websockets import manager
+from src.api.websockets.utils import manager
 from src.core.exceptions.tasks_exceptions import TaskNotFoundException, AssigneeNotFoundException
 from src.api.schemas.tasks_schemas import (
     CreateTaskSchema,

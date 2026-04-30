@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from src.api.routers.websockets import manager
+from src.api.websockets.utils import manager
 from src.core.exceptions.comments_exceptions import CommentNotFoundException
 from src.core.exceptions.users_exceptions import UserNotAuthenticatedException
 from src.services.user_services import UserServices

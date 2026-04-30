@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from src.api.routers.websockets import manager
+from src.api.websockets.utils import manager
 from src.core.exceptions.project_exceptions import ProjectMemberConflictException, ProjectDeleteConflictException, \
     ProjectMemberNotFoundException, ProjectNotFoundException
 from src.api.schemas.project_schemas import ProjectSchema

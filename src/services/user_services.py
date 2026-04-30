@@ -4,7 +4,7 @@ from django.conf import Settings
 from fastapi.params import Cookie
 
 from src.api.authorization.hash import hash_password, verify_password
-from src.api.routers.websockets import manager
+from src.api.websockets.utils import manager
 from src.core.exceptions.users_exceptions import ConflictEmailException, InvalidUserCredentialsException, \
     UserNotFoundException, UserNotAuthorizedException, UserInviteNotFoundException, ConflictInviteException
 
