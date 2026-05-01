@@ -1,15 +1,15 @@
 import { reactive, watch } from 'vue'
 
 const STYLE_OPTIONS = {
-    fontSize: {
+    font_size: {
         normal: 14,
         large: 18
     },
-    layoutWidth: {
+    layout_width: {
         normal: 900,
         wide: 1200
     },
-    primaryHue: {
+    theme_color: {
         green: 160,
         blue: 210,
         purple: 270
@@ -21,9 +21,9 @@ const STYLE_OPTIONS = {
 }
 
 export const styles = reactive({
-    fontSize: 'normal',        // normal | large
-    layoutWidth: 'normal',     // normal | wide
-    primaryHue: 'green',       // green | blue | purple
+    font_size: 'normal',        // normal | large
+    layout_width: 'normal',     // normal | wide
+    theme_color: 'green',       // green | blue | purple
     theme: 'light'            // light | dark
 })
 

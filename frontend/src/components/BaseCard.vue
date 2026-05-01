@@ -97,7 +97,6 @@ const createReply = (e) => {
   color: var(--color-text-muted);
   font-size: 8px;
   text-align: end;
-  margin-left: 4px;
 }
 
 /* delete button */
@@ -178,7 +177,7 @@ const createReply = (e) => {
 .base-card.comment-owner,
 .base-card.comment-companion {
   max-width: 70%;
-  padding: 14px 12px 4px;
+  padding: 12px 12px 2px;
   line-height: normal;
   font-size: var(--font-size-base);
   display: inline-block;

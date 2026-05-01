@@ -23,17 +23,17 @@ export function clearCurrentUser() {
 
 /* === SETTINGS === */
 const DEFAULT_SETTINGS = {
-    fontSize: 'normal',
-    layoutWidth: 'normal',
-    primaryHue: 'green',
+    font_size: 'normal',
+    layout_width: 'normal',
+    theme_color: 'green',
     theme: 'light'
 };
 /* Функция для нормализации настроек (применяем дефолтные значения) */
 export function normalizeSettings(settings = {}) {
     return {
-        fontSize: settings.fontSize ?? DEFAULT_SETTINGS.fontSize,
-        layoutWidth: settings.layoutWidth ?? DEFAULT_SETTINGS.layoutWidth,
-        primaryHue: settings.primaryHue ?? DEFAULT_SETTINGS.primaryHue,
+        font_size: settings.font_size ?? DEFAULT_SETTINGS.font_size,
+        layout_width: settings.layout_width ?? DEFAULT_SETTINGS.layout_width,
+        theme_color: settings.theme_color ?? DEFAULT_SETTINGS.theme_color,
         theme: settings.theme ?? DEFAULT_SETTINGS.theme
     };
 }
@@ -43,9 +43,9 @@ export function applyStyles() {
     const settings = currentUser.value?.settings || DEFAULT_SETTINGS;
 
     const attributes = {
-        'data-fontsize': settings.fontSize,
-        'data-layoutwidth': settings.layoutWidth,
-        'data-primaryhue': settings.primaryHue,
+        'data-fontsize': settings.font_size,
+        'data-layoutwidth': settings.layout_width,
+        'data-primaryhue': settings.theme_color,
         'data-theme': settings.theme
     };
 

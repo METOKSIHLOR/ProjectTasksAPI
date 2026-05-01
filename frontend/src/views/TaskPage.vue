@@ -277,15 +277,13 @@ async function advanceStatus() {
 
 /* helpers */
 function formatRelativeTime(dateString) {
-  // 1. Парсим входную строку "2026-04-29 02:48:18"
-  // Заменяем пробел на T для корректного парсинга ISO формата
   const date = new Date(dateString.replace(' ', 'T'));
   const now = new Date();
 
-  // 2. Вспомогательные функции для добавления ведущих нулей (чч.мм.сс)
+  // Вспомогательные функции для добавления ведущих нулей (чч.мм.сс)
   const pad = (n) => (n < 10 ? '0' + n : n);
 
-  // 3. Получаем компоненты
+  // Получаем компоненты
   const hours = pad(date.getHours());
   const minutes = pad(date.getMinutes());
   const seconds = pad(date.getSeconds());
@@ -293,7 +291,7 @@ function formatRelativeTime(dateString) {
   const day = pad(date.getDate());
   const year = date.getFullYear();
 
-  // 4. Сравниваем даты (без учета времени, только год-месяц-день)
+  // Сравниваем даты (без учета времени, только год-месяц-день)
   const isToday =
       date.getDate() === now.getDate() &&
       date.getMonth() === now.getMonth() &&
@@ -306,15 +304,15 @@ function formatRelativeTime(dateString) {
       date.getMonth() === yesterday.getMonth() &&
       date.getFullYear() === yesterday.getFullYear();
 
-  // 5. Логика форматирования
+  // Логика форматирования
   if (isToday) {
-    return `${hours}:${minutes}:${seconds}`; // чч.мм.сс
+    return `${hours}:${minutes}:${seconds}`
   } else if (isYesterday) {
-    return 'yesterday';
+    return 'yesterday'
   } else if (date.getFullYear() === now.getFullYear()) {
-    return `${day}.${month}`; // мм.дд (в этом году)
+    return `${day}.${month}`
   } else {
-    return `${day}.${month}.${year}`; // гггг.мм.дд (в прошлом/будущем году)
+    return `${day}.${month}.${year}`
   }
 }
 function getCardType(comment) {

@@ -1,27 +1,27 @@
 <script setup>
-import {computed, onBeforeUnmount, onMounted, ref, toRaw} from 'vue';
-import { currentUser, updateUserSettings } from '../store/auth_store.js'; // Подключаем необходимые функции
+import {computed, onBeforeUnmount, ref, toRaw} from 'vue';
+import { currentUser, updateUserSettings } from '../store/auth_store.js';
 import DashboardLayout from '../components/Layout.vue';
 import BaseCard from '../components/BaseCard.vue';
 import BaseButton from "../components/BaseButton.vue";
 import router from "../router/index.js";
-import {alertError, alertInfo, alertSuccess, parseApiError} from "../store/alert_store.js";
+import {alertError, alertInfo, parseApiError} from "../store/alert_store.js";
 import {saveUserSettings} from "../api/api.js";
 
 const settings = [
   {
     label: 'Font size',
-    key: 'fontSize',
+    key: 'font_size',
     options: ['normal', 'large'],
   },
   {
     label: 'Layout width',
-    key: 'layoutWidth',
+    key: 'layout_width',
     options: ['normal', 'wide'],
   },
   {
     label: 'Theme color',
-    key: 'primaryHue',
+    key: 'theme_color',
     options: ['red', 'orange', 'yellow', 'green', 'sky', 'blue', 'purple'],
   },
   {
@@ -54,6 +54,7 @@ async function saveChanges() {
       settings: toRaw(currentUser.value.settings)
     };
     await saveUserSettings(settingsToSave);
+    console.log('Settings to save: ', settingsToSave)
     alertInfo('Done', 'Settings saved');
     originalSettings.value = JSON.parse(
         JSON.stringify(currentUser.value.settings)
@@ -79,11 +80,6 @@ onBeforeUnmount(() => {
   if (isSettingsChanged.value) {
     saveChanges();
   }
-});
-import { connectWS } from '../api/ws'
-
-onMounted(() => {
-
 })
 </script>
 

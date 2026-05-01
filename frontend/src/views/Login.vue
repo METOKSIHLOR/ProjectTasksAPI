@@ -39,6 +39,7 @@ async function submitLogin({ data, onSuccess, onError }) {
     const user = await getCurrentUser()
 
     setCurrentUser(user)
+    console.log('Logged user: ',user)
 
     clearAlerts()
     alertSuccess('Login successful', `Welcome back ${user.name}`)
