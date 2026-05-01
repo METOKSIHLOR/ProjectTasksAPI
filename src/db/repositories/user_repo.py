@@ -13,9 +13,9 @@ class UserRepository:
         self.session = session
 
     async def create_user(self, user: User):
+        user.settings = UserSettings()
         self.session.add(user)
         await self.session.flush()
-        self.session.add(UserSettings(user_id=user.id))
         return user
 
     async def update_user_profile(self, user: User, new_details: dict):
@@ -27,8 +27,14 @@ class UserRepository:
         return user
 
     async def update_user_settings(self, user: User, new_data: dict):
-        user.settings.settings = new_data["settings"]
-        await self.session.refresh(user)
+        settings_data = new_data["settings"]
+
+        user.settings.theme = settings_data["theme"]
+        user.settings.theme_color = settings_data["theme_color"]
+        user.settings.font_size = settings_data["font_size"]
+        user.settings.layout_width = settings_data["layout_width"]
+
+        await self.session.flush()
         return user
 
     async def get_user_by_id(self, user_id: UUID):

@@ -27,7 +27,7 @@ class User(Base):
 class UserSettings(Base):
     __tablename__ = "user_settings"
     id: Mapped[uuid.UUID] = mapped_column(PGUUID, primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("users.id"))
+    user_id: Mapped[uuid.UUID] = mapped_column(PGUUID, ForeignKey("users.id"), unique=True, nullable=False)
     theme: Mapped[Literal['light', 'dark']] = mapped_column(default='light', nullable=False)
     theme_color: Mapped[Literal['green', 'yellow', 'blue', "red", "sky", "orange", "purple"]] = mapped_column(default='green', nullable=False)
     font_size: Mapped[Literal['normal', 'large']] = mapped_column(default='normal', nullable=False)
