@@ -54,7 +54,7 @@ const commentForm = [{ name: 'text', type: 'textarea', label: '', placeholder: '
 const renameTaskForm = [{ name: 'title', label: 'Task title', placeholder: 'Task title', value: '' }]
 const editDescriptionForm = [{ name: 'description', label: 'Description', placeholder: 'Task description', type: 'textarea', value: '' }]
 
-// Схема валидации для переименования задачи и изменения описания
+// РЎС…РµРјР° РІР°Р»РёРґР°С†РёРё РґР»СЏ РїРµСЂРµРёРјРµРЅРѕРІР°РЅРёСЏ Р·Р°РґР°С‡Рё Рё РёР·РјРµРЅРµРЅРёСЏ РѕРїРёСЃР°РЅРёСЏ
 const commentSchema = yup.object({
   text: yup
       .string()
@@ -280,10 +280,8 @@ function formatRelativeTime(dateString) {
   const date = new Date(dateString.replace(' ', 'T'));
   const now = new Date();
 
-  // Вспомогательные функции для добавления ведущих нулей (чч.мм.сс)
   const pad = (n) => (n < 10 ? '0' + n : n);
 
-  // Получаем компоненты
   const hours = pad(date.getHours());
   const minutes = pad(date.getMinutes());
   const seconds = pad(date.getSeconds());
@@ -291,7 +289,7 @@ function formatRelativeTime(dateString) {
   const day = pad(date.getDate());
   const year = date.getFullYear();
 
-  // Сравниваем даты (без учета времени, только год-месяц-день)
+
   const isToday =
       date.getDate() === now.getDate() &&
       date.getMonth() === now.getMonth() &&
@@ -304,11 +302,11 @@ function formatRelativeTime(dateString) {
       date.getMonth() === yesterday.getMonth() &&
       date.getFullYear() === yesterday.getFullYear();
 
-  // Логика форматирования
+
   if (isToday) {
     return `${hours}:${minutes}:${seconds}`
   } else if (isYesterday) {
-    return 'yesterday'
+    return `yesterday ${hours}:${minutes}:${seconds}`
   } else if (date.getFullYear() === now.getFullYear()) {
     return `${day}.${month}`
   } else {
@@ -377,10 +375,21 @@ function goBack() {
 /* websocket */
 async function handleTaskDeleteMessage(msg) {
     alertInfo(
-        'Вжух!',
-        `И задачи больше нет`
+        'Attention!',
+        `This Task was deleted`
     )
     await router.push(`/projects/${projectId.value}`)
+}
+
+async function handleMemberKickedMessage(msg) {
+  if (msg?.project_id !== projectId.value) return
+  if (msg.origin_connection_id === getConnectionId()) return
+
+  alertInfo(
+      'Attention!',
+      'You were removed from this project'
+  )
+  await router.push('/')
 }
 
 function handleCommentUpdateMessage(msg) {
@@ -410,6 +419,10 @@ async function handleTaskMessage(event) {
 
       case 'comment_delete':
         WS_removeComment(msg)
+        break
+
+      case 'member_kicked':
+        await handleMemberKickedMessage(msg)
         break
     }
   } catch (e) {
@@ -755,7 +768,8 @@ onBeforeUnmount(() => {
   transform: scale(1);
 }
 
-/* Анимация удаления задачи */
+
+
 .comments-leave-from {
   opacity: 1;
   transform: scale(1);
@@ -770,7 +784,8 @@ onBeforeUnmount(() => {
   transform: scale(0.5);
 }
 
-/* Поднятие оставшихся */
+
+
 .comments-move {
   transition: all 0.5s ease;
 }
@@ -781,12 +796,12 @@ onBeforeUnmount(() => {
     opacity: 1;
   }
   50% {
-    transform: scale(1.1); /* Увеличение размера */
-    opacity: 0.7; /* Плавное уменьшение прозрачности */
+    transform: scale(1.1);
+    opacity: 0.7;
   }
   100% {
-    transform: scale(1); /* Возвращение к исходному размеру */
-    opacity: 1; /* Восстановление прозрачности */
+    transform: scale(1);
+    opacity: 1;
   }
 }
 </style>

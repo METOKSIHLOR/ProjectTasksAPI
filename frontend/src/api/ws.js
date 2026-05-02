@@ -66,16 +66,16 @@ export function connectWS() {
 
     connectPromise = new Promise((resolve, reject) => {
         socket.onopen = () => {
-            console.log('[WS] connected', {
-                readyState: socket.readyState,
-                state: getReadyStateLabel(socket.readyState)
-            })
+            //console.log('[WS] connected', {
+            //    readyState: socket.readyState,
+            //    state: getReadyStateLabel(socket.readyState)
+            //})
 
             resolve(socket)
         }
 
         socket.onerror = (err) => {
-            console.error('[WS] error', err)
+            //console.error('[WS] error', err)
 
             connectPromise = null
             reject(err)
@@ -84,15 +84,15 @@ export function connectWS() {
         socket.onmessage = (event) => {
             try {
                 const msg = JSON.parse(event.data)
-                console.log('[WS ANSWER]', msg)
+                //console.log('[WS ANSWER]', msg)
             }
             catch {
-                console.warn('[WS] non-json message')
+                //console.warn('[WS] non-json message')
             }
         }
 
         socket.onclose = (event) => {
-            console.warn('[WS] closed', event)
+            //console.warn('[WS] closed', event)
 
             socket = null
             connectPromise = null
@@ -122,11 +122,11 @@ export function getConnectionId() {
 
 export function sendWS(payload) {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-        console.warn('[WS] not connected')
+        //console.warn('[WS] not connected')
         return
     }
 
-    console.log('[SEND TO WS]', payload)
+    //console.log('[SEND TO WS]', payload)
     socket.send(JSON.stringify(payload))
 }
 

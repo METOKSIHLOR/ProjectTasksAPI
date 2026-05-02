@@ -287,20 +287,22 @@ async function WS_removeMember(msg) {
 
   members.value = members.value.filter(m => m.email !== msg.member_email)
 
-  const removedCurrentUser = msg.member_email === currentUser.value?.email
-  if (removedCurrentUser) {
-    alertInfo(
-        'Вжух!',
-        `и ${owner.value?.name || 'Project owner'} выгнал тебя из Проекта`
-    )
-    await router.push('/')
-  }
-  else {
-    alertInfo(
-        'Attention!',
-        `${owner.value?.name || 'Project owner'} removed ${msg.member_email} from this Project`
-    )
-  }
+  alertInfo(
+      'Attention!',
+      `${owner.value?.name || 'Project owner'} removed ${msg.member_email} from this Project`
+  )
+}
+
+async function WS_memberKicked(msg) {
+  if (!project.value) return
+  if (msg?.project_id !== projectId.value) return
+  if (msg.origin_connection_id === getConnectionId()) return
+
+  alertInfo(
+      'Attention!',
+      `${owner.value?.name || 'Project owner'} removed you from this Project`
+  )
+  await router.push('/')
 }
 
 //OTHER WEBSOCKETS
@@ -309,6 +311,7 @@ function WS_TaskUpdate(msg) {
   if (msg.origin_connection_id === getConnectionId()) return
 
   const taskIndex = tasks.value.findIndex(task => task.id === msg.task_id)
+  const currentTask = tasks.value.find(task => task.id === msg.task_id)
   if (
       taskIndex !== -1 &&
       typeof msg.new_details === 'object'
@@ -321,16 +324,16 @@ function WS_TaskUpdate(msg) {
 
   let actorName = owner.value?.name || 'Project owner'
   let actionText = 'updated a task'
-  if ('status' in details) {
+  if ('status' in msg.new_details) {
     actorName = getMemberNameByEmail(
         currentTask?.assignee_email
     )
     actionText = `changed ${currentTask?.title} Task status`
   }
-  if ('title' in details) {
-    actionText = `changed ${details.title} Task title`
+  if ('title' in msg.new_details) {
+    actionText = `changed ${msg.new_details.title} Task title`
   }
-  if ('description' in details) {
+  if ('description' in msg.new_details) {
     actionText = `changed ${currentTask?.title} Task description`
   }
   alertInfo(
@@ -343,8 +346,8 @@ async function WS_ProjectDelete(msg) {
   if (msg.origin_connection_id === getConnectionId()) return
 
   alertInfo(
-      'Вжух!',
-      `и ${owner.value?.name || 'Project owner'} удалил весь Проект`
+      'Р’Р¶СѓС…!',
+      `Рё ${owner.value?.name || 'Project owner'} СѓРґР°Р»РёР» РІРµСЃСЊ РџСЂРѕРµРєС‚`
   )
   await router.push('/')
 }
@@ -377,6 +380,10 @@ async function handleProjectMessage(event) {
 
       case 'member_remove':
         await WS_removeMember(msg)
+        break
+
+      case 'member_kicked':
+        await WS_memberKicked(msg)
         break
 
       case 'project_delete':
