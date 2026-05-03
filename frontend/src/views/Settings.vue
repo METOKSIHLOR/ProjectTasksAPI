@@ -54,7 +54,6 @@ async function saveChanges() {
       settings: toRaw(currentUser.value.settings)
     };
     await saveUserSettings(settingsToSave);
-    console.log('Settings to save: ', settingsToSave)
     alertInfo('Done', 'Settings saved');
     originalSettings.value = JSON.parse(
         JSON.stringify(currentUser.value.settings)

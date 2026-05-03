@@ -39,7 +39,6 @@ async function submitLogin({ data, onSuccess, onError }) {
     const user = await getCurrentUser()
 
     setCurrentUser(user)
-    console.log('Logged user: ',user)
 
     clearAlerts()
     alertSuccess('Login successful', `Welcome back ${user.name}`)
@@ -54,7 +53,6 @@ async function submitLogin({ data, onSuccess, onError }) {
 </script>
 
 <template>
-  <Alert/>
   <div class="auth-page">
     <div class="auth-form">
       <h1>Sign in</h1>

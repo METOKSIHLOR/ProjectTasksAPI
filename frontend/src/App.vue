@@ -1,8 +1,8 @@
 <script setup>
-import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { getCurrentUser } from './api/api.js'
 import { setCurrentUser } from './store/auth_store.js'
+import Alert from "./components/Alert.vue";
 
 async function loadUser(){
   try{
@@ -17,6 +17,7 @@ async function loadUser(){
 </script>
 
 <template>
+  <Alert/>
   <RouterView />
 </template>
 

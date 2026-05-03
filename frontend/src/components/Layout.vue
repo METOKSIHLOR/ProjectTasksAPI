@@ -112,7 +112,7 @@ defineExpose({
       </div>
     </header>
 
-    <Alert />
+
 
     <Sidebar :menuOpen="menuOpen" :closeMenu="closeMenu"/>
 

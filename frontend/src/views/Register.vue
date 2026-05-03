@@ -72,7 +72,6 @@ async function submitRegister({ data, onSuccess, onError }) {
 </script>
 
 <template>
-  <Alert/>
   <div class="auth-page">
     <div class="auth-form">
       <h1>Create account</h1>

@@ -1,5 +1,5 @@
 <script setup>
-import {ref, onMounted, computed} from 'vue'
+import {ref, onBeforeUnmount, onMounted} from 'vue'
 import { useRouter } from 'vue-router'
 
 import DashboardLayout from '../components/Layout.vue'
@@ -10,10 +10,9 @@ import BaseForm from '../components/BaseForm.vue'
 import BaseLoader from '../components/BaseLoader.vue'
 import * as yup from 'yup'
 import { getProjects, createProject, deleteProject } from '../api/api.js'
-import {alertError, alertSuccess, parseApiError} from "../store/alert_store.js";
+import {alertError, alertInfo, alertSuccess, parseApiError} from "../store/alert_store.js";
 import {currentUser} from "../store/auth_store.js";
-
-import { sendWS } from '../api/ws'
+import {connectWS, getConnectionId} from '../api/ws'
 
 const router = useRouter()
 
@@ -21,6 +20,7 @@ const router = useRouter()
 const projects = ref([])
 const loading = ref(true)
 const showCreateProject = ref(false)
+let socket = null
 
 // FORM
 const projectForm = [
@@ -94,8 +94,51 @@ async function removeProject(id) {
 // NAVIGATION
 const goToProject = (id) => router.push(`/projects/${id}`)
 
+// WEBSOCKET
+function handleMemberKickedMessage(msg) {
+  if (msg.origin_connection_id === getConnectionId()) return
+
+  const project = projects.value.find(project => project.id === msg.project_id)
+  if (!project) return
+
+  projects.value = projects.value.filter(project => project.id !== msg.project_id)
+
+  alertInfo(
+      'Attention!',
+      `You were removed from project "${project.name}"`
+  )
+}
+
+async function handleDashboardMessage(event) {
+  try {
+    const msg = JSON.parse(event.data)
+
+    switch (msg?.type) {
+      case 'member_kicked':
+        handleMemberKickedMessage(msg)
+        break
+    }
+  } catch (error) {
+    console.warn('[Dashboard WS] failed to parse message')
+  }
+}
+
 // INIT
-onMounted(loadProjects)
+onMounted(async () => {
+  await loadProjects()
+
+  try {
+    socket = await connectWS()
+    socket?.addEventListener('message', handleDashboardMessage)
+  }
+  catch (err) {
+    console.error('[Dashboard WS] failed to connect', err)
+  }
+})
+
+onBeforeUnmount(() => {
+  socket?.removeEventListener('message', handleDashboardMessage)
+})
 </script>
 
 <template>

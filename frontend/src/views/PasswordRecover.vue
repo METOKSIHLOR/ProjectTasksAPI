@@ -42,7 +42,6 @@ async function submitRecover({ data, onSuccess, onError }) {
 </script>
 
 <template>
-  <Alert/>
   <div class="auth-page">
     <div class="auth-form">
       <h1>Recover password</h1>

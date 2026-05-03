@@ -81,6 +81,7 @@ async function refreshInvites() {
 async function acceptInvite(inviteId, projectId) {
   try {
     await apiAcceptInvite(inviteId);
+    showInvites.value = false;
     alertInfo('Done', `Welcome to Project`);
     await router.push(`/projects/${projectId}`);
   } catch (err) {
