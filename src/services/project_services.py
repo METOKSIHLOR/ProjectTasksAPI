@@ -41,10 +41,6 @@ class ProjectServices:
         await self.repo.delete_project(project)
         await self.repo.commit()
 
-        await manager.send_to_room(f"project:{project_id}",
-                                   {"type": "project_delete",
-                                    "project_id": str(project_id)},
-                                   sender_connection_id=connection_id)
         for member in project.members:
             await manager.send_to_room(f"user:{member.user_id}",
                                        {"type": "project_delete",
