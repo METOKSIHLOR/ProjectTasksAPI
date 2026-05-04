@@ -14,10 +14,6 @@ class ProjectServices:
         self.repo = ProjectRepository(session)
         self.user_serv = UserServices(session=session)
 
-    async def create_new_project(self, project: ProjectSchema, user_id: UUID):
-        project = await self.repo.create_project(Project(name=project.name, owner_id=user_id))
-        await self.repo.commit()
-        return project
 
     async def get_project_by_id(self, project_id: UUID):
         project = await self.repo.get_project_by_id(project_id)

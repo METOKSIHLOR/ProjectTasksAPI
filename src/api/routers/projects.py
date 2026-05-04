@@ -18,10 +18,11 @@ router = APIRouter(prefix="/projects", tags=["projects"])
             })
 async def create_project(project: CreateProjectSchema,
                          session: AsyncSession = Depends(get_session),
+                         x_connection_id: str | None = Header(None),
                          user_id: UUID = Depends(get_current_user)):
     """Создание нового проекта"""
     services = ProjectServices(session)
-    project = await services.create_new_project(project, user_id)
+    project = await services.create_new_project(project, user_id, connection_id=x_connection_id)
     return project
 
 @router.delete("/{project_id}", summary="Удалить проект",
