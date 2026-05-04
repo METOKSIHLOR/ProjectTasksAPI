@@ -6,7 +6,8 @@ from fastapi.params import Cookie
 from src.api.authorization.hash import hash_password, verify_password
 from src.api.websockets.utils import manager
 from src.core.exceptions.users_exceptions import ConflictEmailException, InvalidUserCredentialsException, \
-    UserNotFoundException, UserNotAuthorizedException, UserInviteNotFoundException, ConflictInviteException
+    UserNotFoundException, UserNotAuthorizedException, UserInviteNotFoundException, ConflictInviteException, \
+    UserNotAuthenticatedException
 
 from src.api.schemas.user_schemas import UserRegistrationSchema, UserCredsSchema, UpdateUserSettingsSchema, \
     UserSettingsResponseSchema, UpdateUserSchema, UserInvitesInfoSchema, UserInvitesUpdateSchema, \
@@ -177,5 +178,5 @@ class UserServices:
     async def check_user_role(self, user_id, project_id, roles: List[str]):
         # проверяем соответствие роли пользователя
         if not await self.repo.check_user_role(user_id=user_id, project_id=project_id, roles=roles):
-            raise UserNotAuthorizedException()
+            raise UserNotAuthenticatedException()
 
