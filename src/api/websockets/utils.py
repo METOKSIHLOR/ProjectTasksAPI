@@ -39,16 +39,23 @@ async def session_watcher(websocket: WebSocket, session_id: str):
     Нужна потому, что WebSocket соединение живёт долго,
     а сессия может истечь или быть удалена (logout).
     """
+    warning_send = False
     while True:
         await asyncio.sleep(30)
-
-        try:
-            await get_current_user(session_id)
-        except UserNotAuthorizedException:
+        ttl = await storage.ttl(f"session_id:{session_id}")
+        print(f"Session TTL: {ttl}")
+        if ttl == -2:
             # Если сессия больше невалидна - полностью отключаем клиента
             await manager.disconnect_all(websocket)
             await websocket.close(code=1008)
             break
+
+        if ttl < 60 and not warning_send:
+            # если остается меньше минуты до конца сессии - предупреждаем об этом
+            await manager.send_to_ws(websocket, {"type": "session_expire_warning",
+                                                 "seconds_remain": ttl})
+            warning_send = True
+
 
 
 @dataclass
