@@ -102,6 +102,7 @@ class TasksService:
         self, user_id: UUID, task_id: UUID, project_id: UUID, new_task: UpdateTaskSchema, connection_id
     ):
         """функция позволяет исполняющему задачу обновлять только ее статус, а владельцу проекта все поля по желанию"""
+        status_queue = {"todo": 1, "in_progress": 2, "done": 3}
 
         #получаем таску, если она есть в этом проекте 
         task = await self.get_and_check_task_in_this_project(task_id=task_id, project_id=project_id)
@@ -118,6 +119,12 @@ class TasksService:
         if not (is_only_status and is_assignee):
             # если не исполнитель или обновляется не только статус - проверяем владелец проекта ли пользователь
             await self.user_serv.check_user_role(user_id=user_id, project_id=project_id, roles=["owner"])
+
+        if "status" in dict_task:
+            new_status = dict_task["status"]
+            if status_queue[new_status] < status_queue[task.status]:
+                # если пользователь пытается вернуть статус задачи "назад" - проверяем админ ли он 
+                await self.user_serv.check_user_role(user_id=user_id, project_id=project_id, roles=["owner"])
 
         # если владелец обновляет исполнителя задачи
         if "assignee_email" in dict_task:
