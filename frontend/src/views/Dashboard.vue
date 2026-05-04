@@ -109,11 +109,34 @@ function handleMemberKickedMessage(msg) {
   )
 }
 
+function handleProjectUpdateMessage(msg) {
+  if (msg.origin_connection_id === getConnectionId()) return
+
+  const projectIndex = projects.value.findIndex(project => project.id === msg.project_id)
+  if (projectIndex === -1) return
+
+  const previousName = projects.value[projectIndex].name
+
+  projects.value[projectIndex] = {
+    ...projects.value[projectIndex],
+    name: msg.new_details
+  }
+
+  alertInfo(
+      'Attention!',
+      `Project "${previousName}" was renamed to "${msg.new_details}"`
+  )
+}
+
 async function handleDashboardMessage(event) {
   try {
     const msg = JSON.parse(event.data)
 
     switch (msg?.type) {
+      case 'project_update':
+        handleProjectUpdateMessage(msg)
+        break
+
       case 'member_kicked':
         handleMemberKickedMessage(msg)
         break
